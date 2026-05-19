@@ -1,35 +1,37 @@
 import { Scene } from 'phaser';
 
-export class Game extends Scene
-{
-    camera: Phaser.Cameras.Scene2D.Camera;
-    background: Phaser.GameObjects.Image;
-    msg_text : Phaser.GameObjects.Text;
-
-    constructor ()
-    {
+export class Game extends Scene {
+    constructor() {
         super('Game');
     }
 
-    create ()
-    {
-        this.camera = this.cameras.main;
-        this.camera.setBackgroundColor(0x00ff00);
+    create() {
+        this.cameras.main.fadeIn(500, 0, 0, 0);
+        this.cameras.main.setBackgroundColor(0x000000);
 
-        this.background = this.add.image(512, 384, 'background');
-        this.background.setAlpha(0.5);
-
-        this.msg_text = this.add.text(512, 384, 'Make something fun!\nand share it with us:\nsupport@phaser.io', {
-            fontFamily: 'Arial Black', fontSize: 38, color: '#ffffff',
-            stroke: '#000000', strokeThickness: 8,
+        const start_msg = this.add.text(this.scale.width / 2, this.scale.height / 2 + 100, 'Press any key to proceed to the GameOver Scene', {
+            fontFamily: 'PressStart2P', fontSize: 20, color: '#ffffff',
             align: 'center'
+        }).setOrigin(0.5);
+
+        // Tween to blink the text
+        this.tweens.add({
+            targets: start_msg,
+            alpha: 0,
+            duration: 800,
+            ease: 'Linear',
+            yoyo: true,
+            repeat: -1
         });
-        this.msg_text.setOrigin(0.5);
 
-        this.input.once('pointerdown', () => {
-
-            this.scene.start('GameOver');
-
+        // Press any key to start
+        this.time.addEvent({
+            delay: 1000,
+            callback: () => {
+                this.input.keyboard?.once('keydown', () => {
+                    this.scene.start('GameOver');
+                });
+            }
         });
     }
 }

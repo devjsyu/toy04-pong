@@ -1,35 +1,44 @@
 import { Scene } from 'phaser';
 
-export class GameOver extends Scene
-{
-    camera: Phaser.Cameras.Scene2D.Camera;
-    background: Phaser.GameObjects.Image;
-    gameover_text : Phaser.GameObjects.Text;
+export class GameOver extends Scene {
+    gameover_text: Phaser.GameObjects.Text;
 
-    constructor ()
-    {
+    constructor() {
         super('GameOver');
     }
 
-    create ()
-    {
-        this.camera = this.cameras.main
-        this.camera.setBackgroundColor(0xff0000);
+    create() {
+        this.cameras.main.fadeIn(500, 0, 0, 0);
+        this.cameras.main.setBackgroundColor(0x000000);
 
-        this.background = this.add.image(512, 384, 'background');
-        this.background.setAlpha(0.5);
-
-        this.gameover_text = this.add.text(512, 384, 'Game Over', {
-            fontFamily: 'Arial Black', fontSize: 64, color: '#ffffff',
-            stroke: '#000000', strokeThickness: 8,
+        this.gameover_text = this.add.text(this.scale.width / 2, this.scale.height / 2, 'Game Over', {
+            fontFamily: 'PressStart2P', fontSize: 60, color: '#ffffff',
             align: 'center'
         });
         this.gameover_text.setOrigin(0.5);
 
-        this.input.once('pointerdown', () => {
+        const restart_msg = this.add.text(this.scale.width / 2, this.scale.height / 2 + 100, 'Press Enter to restart', {
+            fontFamily: 'PressStart2P', fontSize: 20, color: '#ffffff',
+            align: 'center'
+        }).setOrigin(0.5);
 
-            this.scene.start('MainMenu');
+        // Tween to blink the text
+        this.tweens.add({
+            targets: restart_msg,
+            alpha: 0,
+            duration: 800,
+            ease: 'Linear',
+            yoyo: true,
+            repeat: -1
+        });
 
+        this.time.addEvent({
+            delay: 1000,
+            callback: () => {
+                this.input.keyboard?.once('keydown-ENTER', () => {
+                    this.scene.start('MainMenu');
+                });
+            }
         });
     }
 }
