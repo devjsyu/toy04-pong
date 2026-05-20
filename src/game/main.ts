@@ -21,23 +21,7 @@ const config: Phaser.Types.Core.GameConfig = {
         GameOver
     ],
     physics: {
-        default: "arcade",
-        arcade: {
-            x: 0,
-            y: 0,
-            width: 1024,
-            height: 768,
-            gravity: {
-                x: 0,
-                y: 0
-            },
-            checkCollision: {
-                up: true,
-                down: true,
-                left: false,
-                right: false
-            }
-        }
+        default: "arcade"
     }
 };
 

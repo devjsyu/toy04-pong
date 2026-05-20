@@ -10,6 +10,7 @@ export class Ball extends Phaser.Physics.Arcade.Image {
         scene.physics.add.existing(this);
 
         this.setCollideWorldBounds(true);
+        scene.physics.world.setBoundsCollision(false, false, true, true);
         this.setBounce(1, 1);
 
         this.resetBall();
