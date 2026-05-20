@@ -1,6 +1,19 @@
-import { Scene } from 'phaser';
+import * as Phaser from 'phaser';
+import { Ball } from '../gameobjects/Ball';
+import { Paddle } from '../gameobjects/Paddle';
 
-export class Game extends Scene {
+export class Game extends Phaser.Scene {
+    paddle1!: Paddle;
+    paddle2!: Paddle;
+    ball!: Ball;
+    wasdKeys?: {
+        W: Phaser.Input.Keyboard.Key;
+        A: Phaser.Input.Keyboard.Key;
+        S: Phaser.Input.Keyboard.Key;
+        D: Phaser.Input.Keyboard.Key;
+    };
+    cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+
     constructor() {
         super('Game');
     }
@@ -9,29 +22,65 @@ export class Game extends Scene {
         this.cameras.main.fadeIn(500, 0, 0, 0);
         this.cameras.main.setBackgroundColor(0x000000);
 
-        const start_msg = this.add.text(this.scale.width / 2, this.scale.height / 2 + 100, 'Press any key to proceed to the GameOver Scene', {
-            fontFamily: 'PressStart2P', fontSize: 20, color: '#ffffff',
-            align: 'center'
-        }).setOrigin(0.5);
+        this.ball = new Ball(this, this.scale.width / 2, this.scale.height / 2);
+        this.paddle1 = new Paddle(this, 20, this.scale.height / 2);
+        this.paddle2 = new Paddle(this, this.scale.width - 20, this.scale.height / 2);
 
-        // Tween to blink the text
-        this.tweens.add({
-            targets: start_msg,
-            alpha: 0,
-            duration: 800,
-            ease: 'Linear',
-            yoyo: true,
-            repeat: -1
-        });
+        const paddles = [this.paddle1, this.paddle2];
+
+        this.physics.add.collider(
+            this.ball,
+            paddles,
+            (ballObj) => {
+                const currentBall = ballObj as Ball;
+                currentBall.hitPaddle();
+            },
+            undefined, // processCallback은 사용하지 않으므로 무시
+            this // 콜백이 실행될 컨텍스트 환경을 지정
+        );
+
+        if (this.input.keyboard) {
+            this.wasdKeys = {
+                W: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+                A: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+                S: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+                D: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+            }
+            this.cursors = this.input.keyboard.createCursorKeys();
+        }
 
         // Press any key to start
         this.time.addEvent({
             delay: 1000,
             callback: () => {
-                this.input.keyboard?.once('keydown', () => {
+                this.input.keyboard?.once('keydown-ENTER', () => {
                     this.scene.start('GameOver');
                 });
             }
         });
+    }
+
+    update() {
+        if (!this.wasdKeys || !this.cursors || !this.paddle1 || !this.paddle2) return;
+
+        if (this.wasdKeys?.W.isDown) {
+            this.paddle1.moveUp();
+        }
+        else if (this.wasdKeys?.S.isDown) {
+            this.paddle1.moveDown();
+        }
+        else {
+            this.paddle1.stopMove();
+        }
+
+        if (this.cursors.up.isDown) {
+            this.paddle2.moveUp();
+        }
+        else if (this.cursors.down.isDown) {
+            this.paddle2.moveDown();
+        }
+        else {
+            this.paddle2.stopMove();
+        }
     }
 }
