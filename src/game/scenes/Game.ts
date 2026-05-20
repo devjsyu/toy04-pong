@@ -82,5 +82,9 @@ export class Game extends Phaser.Scene {
         else {
             this.paddle2.stopMove();
         }
+
+        if (this.ball.x < 0 || this.ball.x > this.scale.width) {
+            this.ball.resetBall();
+        }
     }
 }
