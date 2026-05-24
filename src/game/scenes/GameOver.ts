@@ -1,17 +1,24 @@
 import { Scene } from 'phaser';
 
 export class GameOver extends Scene {
-    gameover_text: Phaser.GameObjects.Text;
+    gameover_text!: Phaser.GameObjects.Text;
+    winner?: string;
 
     constructor() {
         super('GameOver');
+    }
+
+    init(data: { winner?: string }) {
+        this.winner = data.winner;
     }
 
     create() {
         this.cameras.main.fadeIn(500, 0, 0, 0);
         this.cameras.main.setBackgroundColor(0x000000);
 
-        this.gameover_text = this.add.text(this.scale.width / 2, this.scale.height / 2, 'Game Over', {
+        const titleText = this.winner ? `${this.winner} Wins!` : 'Game Over';
+
+        this.gameover_text = this.add.text(this.scale.width / 2, this.scale.height / 2, titleText, {
             fontFamily: 'PressStart2P', fontSize: 60, color: '#ffffff',
             align: 'center'
         });

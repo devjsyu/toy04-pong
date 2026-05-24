@@ -91,19 +91,12 @@ export class Game extends Phaser.Scene {
 
         if (this.ball.x < 0 || this.ball.x > this.scale.width) {
             const hud = this.scene.get('Hud') as Hud;
-            let currentScore = 0;
-            
-            if (this.ball.x < 0) {
-                // 왼쪽으로 나감 -> 플레이어 2 득점
-                currentScore = hud.updateScore(PlayerEnum.Two);
-            } else {
-                // 오른쪽으로 나감 -> 플레이어 1 득점
-                currentScore = hud.updateScore(PlayerEnum.One);
-            }
+            const scorer = this.ball.x < 0 ? PlayerEnum.Two : PlayerEnum.One;
+            const currentScore = hud.updateScore(scorer);
 
             if (currentScore >= 10) {
                 this.scene.stop('Hud');
-                this.scene.start('GameOver');
+                this.scene.start('GameOver', { winner: scorer });
             } else {
                 this.ball.resetBall();
             }
