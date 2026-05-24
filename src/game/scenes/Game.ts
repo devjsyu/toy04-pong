@@ -2,7 +2,6 @@ import * as Phaser from 'phaser';
 import { Ball } from '../gameobjects/Ball';
 import { Paddle } from '../gameobjects/Paddle';
 import { PlayerEnum } from '../../constants/gameConfig';
-import { Hud } from './Hud';
 
 export class Game extends Phaser.Scene {
     paddle1!: Paddle;
@@ -23,6 +22,10 @@ export class Game extends Phaser.Scene {
     create() {
         this.cameras.main.fadeIn(500, 0, 0, 0);
         this.cameras.main.setBackgroundColor(0x000000);
+
+        // 시작 전 점수 초기화
+        this.registry.set(PlayerEnum.One, 0);
+        this.registry.set(PlayerEnum.Two, 0);
 
         // HUD 씬을 병렬로 실행합니다.
         this.scene.run('Hud');
@@ -90,11 +93,12 @@ export class Game extends Phaser.Scene {
         }
 
         if (this.ball.x < 0 || this.ball.x > this.scale.width) {
-            const hud = this.scene.get('Hud') as Hud;
             const scorer = this.ball.x < 0 ? PlayerEnum.Two : PlayerEnum.One;
-            const currentScore = hud.updateScore(scorer);
+            
+            const currentScore = (this.registry.get(scorer) || 0) + 1;
+            this.registry.set(scorer, currentScore);
 
-            if (currentScore >= 10) {
+            if (currentScore >= 3) {
                 this.scene.stop('Hud');
                 this.scene.start('GameOver', { winner: scorer });
             } else {
