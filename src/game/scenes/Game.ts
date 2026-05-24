@@ -1,6 +1,8 @@
 import * as Phaser from 'phaser';
 import { Ball } from '../gameobjects/Ball';
 import { Paddle } from '../gameobjects/Paddle';
+import { PlayerEnum } from '../../constants/gameConfig';
+import { Hud } from './Hud';
 
 export class Game extends Phaser.Scene {
     paddle1!: Paddle;
@@ -21,6 +23,9 @@ export class Game extends Phaser.Scene {
     create() {
         this.cameras.main.fadeIn(500, 0, 0, 0);
         this.cameras.main.setBackgroundColor(0x000000);
+
+        // HUD 씬을 병렬로 실행합니다.
+        this.scene.run('Hud');
 
         this.ball = new Ball(this, this.scale.width / 2, this.scale.height / 2);
         this.paddle1 = new Paddle(this, 20, this.scale.height / 2);
@@ -54,6 +59,7 @@ export class Game extends Phaser.Scene {
             delay: 1000,
             callback: () => {
                 this.input.keyboard?.once('keydown-ENTER', () => {
+                    this.scene.stop('Hud');
                     this.scene.start('GameOver');
                 });
             }
@@ -84,7 +90,23 @@ export class Game extends Phaser.Scene {
         }
 
         if (this.ball.x < 0 || this.ball.x > this.scale.width) {
-            this.ball.resetBall();
+            const hud = this.scene.get('Hud') as Hud;
+            let currentScore = 0;
+            
+            if (this.ball.x < 0) {
+                // 왼쪽으로 나감 -> 플레이어 2 득점
+                currentScore = hud.updateScore(PlayerEnum.Two);
+            } else {
+                // 오른쪽으로 나감 -> 플레이어 1 득점
+                currentScore = hud.updateScore(PlayerEnum.One);
+            }
+
+            if (currentScore >= 10) {
+                this.scene.stop('Hud');
+                this.scene.start('GameOver');
+            } else {
+                this.ball.resetBall();
+            }
         }
     }
 }
