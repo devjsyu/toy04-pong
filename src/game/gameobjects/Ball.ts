@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 
 export class Ball extends Phaser.Physics.Arcade.Image {
-    private ballSpeed: number = 300;
+    private ballSpeed: number = 400;
 
     constructor(scene: Phaser.Scene, x: number, y: number) {
         super(scene, x, y, 'white_circle');
