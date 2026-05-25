@@ -29,6 +29,10 @@ export class Preloader extends Scene {
             // 원은 중심점을 기준으로 그려지므로 가로세로 20 크기 상자 안에 쏙 들어가려면 (10, 10) 위치에 반지름 10으로 그립니다.
             g.fillCircle(10, 10, 10);
         });
+
+        this.load.audio('win', 'sounds/win.wav');
+        this.load.audio('ball-bounce', 'sounds/ball-bounce.wav');
+        this.load.audio('change-score', 'sounds/change-score.mp3');
     }
 
     create() {

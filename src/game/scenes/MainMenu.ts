@@ -40,5 +40,7 @@ export class MainMenu extends Scene {
                 });
             }
         });
+
+        this.sound.play('win');
     }
 }

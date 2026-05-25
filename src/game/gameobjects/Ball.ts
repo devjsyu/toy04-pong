@@ -14,6 +14,10 @@ export class Ball extends Phaser.Physics.Arcade.Image {
         this.setBounce(1, 1);
 
         this.resetBall();
+
+        if (this.body instanceof Phaser.Physics.Arcade.Body) {
+            this.body.onWorldBounds = true;
+        }
     }
 
     public resetBall(): void {
@@ -38,5 +42,11 @@ export class Ball extends Phaser.Physics.Arcade.Image {
             this.setVelocityX(this.body.velocity.x * 1.1);
             this.setVelocityY(this.body.velocity.y * 1.1);
         }
+
+        this.scene.sound.play('ball-bounce');
+    }
+
+    public hitWall() {
+        this.scene.sound.play('ball-bounce');
     }
 }

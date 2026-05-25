@@ -47,6 +47,18 @@ export class Game extends Phaser.Scene {
             this // 콜백이 실행될 컨텍스트 환경을 지정
         );
 
+        this.physics.world.setBoundsCollision(false, false, true, true);
+
+        this.physics.world.on(
+            Phaser.Physics.Arcade.Events.WORLD_BOUNDS,
+            (body: Phaser.Physics.Arcade.Body, up: boolean, down: boolean) => {
+                if (body.gameObject instanceof Ball && (up || down)) {
+                    body.gameObject.hitWall();
+                }
+            },
+            this
+        );
+
         if (this.input.keyboard) {
             this.wasdKeys = {
                 W: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
@@ -99,9 +111,13 @@ export class Game extends Phaser.Scene {
             this.registry.set(scorer, currentScore);
 
             if (currentScore >= 3) {
+                this.sound.play('win');
+
                 this.scene.stop('Hud');
                 this.scene.start('GameOver', { winner: scorer });
             } else {
+                this.sound.play('change-score', { volume: 0.5 });
+
                 this.ball.resetBall();
             }
         }
