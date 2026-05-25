@@ -11,15 +11,15 @@ export class Hud extends Phaser.Scene {
 
     create() {
         this.player1ScoreText = this.createScoreText(
-            this.scale.width / 3,
-            this.scale.height / 3,
+            this.scale.width * 0.15, // 왼쪽 끝으로 이동
+            20,                      // 최상단 여백
             PlayerEnum.One,
             this.registry.get(PlayerEnum.One as any) ?? 0
         );
 
         this.player2ScoreText = this.createScoreText(
-            this.scale.width * 2 / 3,
-            this.scale.height / 3,
+            this.scale.width * 0.85, // 오른쪽 끝으로 이동
+            20,                      // 최상단 여백
             PlayerEnum.Two,
             this.registry.get(PlayerEnum.Two as any) ?? 0
         );
@@ -42,7 +42,8 @@ export class Hud extends Phaser.Scene {
 
     private updateText(textObj: Phaser.GameObjects.Text, label: string | PlayerEnum, score: number) {
         const formattedScore = score.toString().padStart(2, '0');
-        textObj.setText(`${label}\n${formattedScore}`);
+        // 모든 텍스트를 대문자로 변환하여 아케이드 느낌을 강조하고 세로로 배치합니다.
+        textObj.setText(`${label.toUpperCase()}\n${formattedScore}`);
     }
 
     /**
@@ -50,15 +51,16 @@ export class Hud extends Phaser.Scene {
      */
     private createScoreText(x: number, y: number, label: string | PlayerEnum, score: number): Phaser.GameObjects.Text {
         const formattedScore = score.toString().padStart(2, '0');
-        const content = `${label}\n${formattedScore}`;
+        const content = `${label.toUpperCase()}\n${formattedScore}`;
 
         const textStyle: Phaser.Types.GameObjects.Text.TextStyle = {
             fontFamily: 'PressStart2P',
-            fontSize: '40px',
+            fontSize: '20px', // 크기를 줄여 시야 방해 최소화
             color: '#ffffff',
-            align: 'center'
+            align: 'center',
+            lineSpacing: 10   // 라벨과 점수 사이 간격
         };
 
-        return this.add.text(x, y, content, textStyle).setOrigin(0.5, 0.5);
+        return this.add.text(x, y, content, textStyle).setOrigin(0.5, 0);
     }
 }
