@@ -23,4 +23,8 @@ export const SCENES = {
     GAME_OVER: 'GameOver'
 } as const;
 
+export const EVENTS = {
+    SCORE_UPDATED: 'SCORE_UPDATED'
+} as const;
+
 export const PADDLE_SPEED = 800;

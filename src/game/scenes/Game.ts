@@ -1,12 +1,18 @@
 import * as Phaser from 'phaser';
 import { Ball } from '../gameobjects/Ball';
 import { Paddle } from '../gameobjects/Paddle';
-import { PlayerEnum, WINNING_SCORE, ASSETS, SCENES } from '../../constants/gameConfig';
+import { PlayerEnum, WINNING_SCORE, ASSETS, SCENES, EVENTS } from '../../constants/gameConfig';
 
 export class Game extends Phaser.Scene {
     paddle1!: Paddle;
     paddle2!: Paddle;
     ball!: Ball;
+
+    // string 대신 PlayerEnum을 키로 사용하여 타입 안전성을 높이기
+    private scores: Record<PlayerEnum, number> = {
+        [PlayerEnum.One]: 0,
+        [PlayerEnum.Two]: 0
+    };
 
     constructor() {
         super(SCENES.GAME);
@@ -16,9 +22,12 @@ export class Game extends Phaser.Scene {
         this.cameras.main.fadeIn(500, 0, 0, 0);
         this.cameras.main.setBackgroundColor(0x000000);
 
-        // 시작 전 점수 초기화
-        this.registry.set(PlayerEnum.One, 0);
-        this.registry.set(PlayerEnum.Two, 0);
+        // 점수 내부 변수 초기화 및 초기 UI 반영을 위한 이벤트 발행
+        this.scores[PlayerEnum.One] = 0;
+        this.scores[PlayerEnum.Two] = 0;
+
+        this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.One, 0);
+        this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.Two, 0);
 
         // HUD 씬을 병렬로 실행합니다.
         this.scene.run(SCENES.HUD);
@@ -78,8 +87,9 @@ export class Game extends Phaser.Scene {
         if (this.ball.x < 0 || this.ball.x > this.scale.width) {
             const scorer = this.ball.x < 0 ? PlayerEnum.Two : PlayerEnum.One;
             
-            const currentScore = (this.registry.get(scorer) || 0) + 1;
-            this.registry.set(scorer, currentScore);
+            this.scores[scorer]++;
+            const currentScore = this.scores[scorer];
+            this.game.events.emit(EVENTS.SCORE_UPDATED, scorer, currentScore);
 
             if (currentScore >= WINNING_SCORE) {
                 this.sound.play(ASSETS.SOUND_WIN);

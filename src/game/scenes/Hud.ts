@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { PlayerEnum, SCENES } from '../../constants/gameConfig';
+import { PlayerEnum, SCENES, EVENTS } from '../../constants/gameConfig';
 
 export class Hud extends Phaser.Scene {
     private player1ScoreText!: Phaser.GameObjects.Text;
@@ -14,30 +14,31 @@ export class Hud extends Phaser.Scene {
             this.scale.width * 0.15, // 왼쪽 끝으로 이동
             20,                      // 최상단 여백
             PlayerEnum.One,
-            this.registry.get(PlayerEnum.One) ?? 0
+            0
         );
 
         this.player2ScoreText = this.createScoreText(
             this.scale.width * 0.85, // 오른쪽 끝으로 이동
             20,                      // 최상단 여백
             PlayerEnum.Two,
-            this.registry.get(PlayerEnum.Two) ?? 0
+            0
         );
 
-        // Registry의 데이터 변경 감시 (이벤트 리스너)
-        this.registry.events.on(`changedata-${PlayerEnum.One}`, (_: any, value: number) => {
-            this.updateText(this.player1ScoreText, PlayerEnum.One, value);
-        });
-
-        this.registry.events.on(`changedata-${PlayerEnum.Two}`, (_: any, value: number) => {
-            this.updateText(this.player2ScoreText, PlayerEnum.Two, value);
-        });
+        // 전역 이벤트 리스너 등록
+        this.game.events.on(EVENTS.SCORE_UPDATED, this.handleScoreUpdate, this);
 
         // 씬 종료 시 이벤트 리스너 제거 (메모리 누수 방지)
         this.events.once('shutdown', () => {
-            this.registry.events.off(`changedata-${PlayerEnum.One}`);
-            this.registry.events.off(`changedata-${PlayerEnum.Two}`);
+            this.game.events.off(EVENTS.SCORE_UPDATED, this.handleScoreUpdate, this);
         });
+    }
+
+    private handleScoreUpdate(player: PlayerEnum, score: number) {
+        if (player === PlayerEnum.One) {
+            this.updateText(this.player1ScoreText, PlayerEnum.One, score);
+        } else if (player === PlayerEnum.Two) {
+            this.updateText(this.player2ScoreText, PlayerEnum.Two, score);
+        }
     }
 
     private updateText(textObj: Phaser.GameObjects.Text, label: string | PlayerEnum, score: number) {
