@@ -14,14 +14,14 @@ export class Hud extends Phaser.Scene {
             this.scale.width * 0.15, // 왼쪽 끝으로 이동
             20,                      // 최상단 여백
             PlayerEnum.One,
-            this.registry.get(PlayerEnum.One as any) ?? 0
+            this.registry.get(PlayerEnum.One) ?? 0
         );
 
         this.player2ScoreText = this.createScoreText(
             this.scale.width * 0.85, // 오른쪽 끝으로 이동
             20,                      // 최상단 여백
             PlayerEnum.Two,
-            this.registry.get(PlayerEnum.Two as any) ?? 0
+            this.registry.get(PlayerEnum.Two) ?? 0
         );
 
         // Registry의 데이터 변경 감시 (이벤트 리스너)
