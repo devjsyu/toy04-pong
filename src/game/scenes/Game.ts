@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { Ball } from '../gameobjects/Ball';
 import { Paddle } from '../gameobjects/Paddle';
-import { PlayerEnum, WINNING_SCORE, ASSETS } from '../../constants/gameConfig';
+import { PlayerEnum, WINNING_SCORE } from '../../constants/gameConfig';
 
 export class Game extends Phaser.Scene {
     paddle1!: Paddle;
