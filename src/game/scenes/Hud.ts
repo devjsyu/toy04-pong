@@ -1,12 +1,12 @@
 import * as Phaser from 'phaser';
-import { PlayerEnum } from '../../constants/gameConfig';
+import { PlayerEnum, SCENES } from '../../constants/gameConfig';
 
 export class Hud extends Phaser.Scene {
     private player1ScoreText!: Phaser.GameObjects.Text;
     private player2ScoreText!: Phaser.GameObjects.Text;
 
     constructor() {
-        super("Hud");
+        super(SCENES.HUD);
     }
 
     create() {

@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { SCENES } from '../../constants/gameConfig';
 
 export class GameOver extends Scene {
     gameover_text!: Phaser.GameObjects.Text;
@@ -43,7 +44,7 @@ export class GameOver extends Scene {
             delay: 1000,
             callback: () => {
                 this.input.keyboard?.once('keydown-ENTER', () => {
-                    this.scene.start('MainMenu');
+                    this.scene.start(SCENES.MAIN_MENU);
                 });
             }
         });

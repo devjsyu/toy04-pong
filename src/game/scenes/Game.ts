@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { Ball } from '../gameobjects/Ball';
 import { Paddle } from '../gameobjects/Paddle';
-import { PlayerEnum, WINNING_SCORE } from '../../constants/gameConfig';
+import { PlayerEnum, WINNING_SCORE, ASSETS, SCENES } from '../../constants/gameConfig';
 
 export class Game extends Phaser.Scene {
     paddle1!: Paddle;
@@ -9,7 +9,7 @@ export class Game extends Phaser.Scene {
     ball!: Ball;
 
     constructor() {
-        super('Game');
+        super(SCENES.GAME);
     }
 
     create() {
@@ -21,7 +21,7 @@ export class Game extends Phaser.Scene {
         this.registry.set(PlayerEnum.Two, 0);
 
         // HUD 씬을 병렬로 실행합니다.
-        this.scene.run('Hud');
+        this.scene.run(SCENES.HUD);
 
         this.ball = new Ball(this, this.scale.width / 2, this.scale.height / 2);
         this.paddle1 = new Paddle(this, 20, this.scale.height / 2, PlayerEnum.One);
@@ -57,8 +57,11 @@ export class Game extends Phaser.Scene {
             delay: 1000,
             callback: () => {
                 this.input.keyboard?.once('keydown-ENTER', () => {
-                    this.scene.stop('Hud');
-                    this.scene.start('GameOver');
+                    this.cameras.main.fadeOut(500, 0, 0, 0);
+                    this.cameras.main.once('camerafadeoutcomplete', () => {
+                        this.scene.stop(SCENES.HUD);
+                        this.scene.start(SCENES.GAME_OVER);
+                    });
                 });
             }
         });
@@ -68,6 +71,10 @@ export class Game extends Phaser.Scene {
         this.paddle1.update();
         this.paddle2.update();
 
+        this.checkScore();
+    }
+
+    private checkScore() {
         if (this.ball.x < 0 || this.ball.x > this.scale.width) {
             const scorer = this.ball.x < 0 ? PlayerEnum.Two : PlayerEnum.One;
             
@@ -75,12 +82,15 @@ export class Game extends Phaser.Scene {
             this.registry.set(scorer, currentScore);
 
             if (currentScore >= WINNING_SCORE) {
-                this.sound.play('win');
+                this.sound.play(ASSETS.SOUND_WIN);
 
-                this.scene.stop('Hud');
-                this.scene.start('GameOver', { winner: scorer });
+                this.cameras.main.fadeOut(500, 0, 0, 0);
+                this.cameras.main.once('camerafadeoutcomplete', () => {
+                    this.scene.stop(SCENES.HUD);
+                    this.scene.start(SCENES.GAME_OVER, { winner: scorer });
+                });
             } else {
-                this.sound.play('change-score', { volume: 0.5 });
+                this.sound.play(ASSETS.SOUND_SCORE, { volume: 0.5 });
 
                 this.ball.resetBall();
             }

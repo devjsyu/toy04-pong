@@ -1,9 +1,9 @@
 import { Scene } from 'phaser';
-import { ASSETS } from '../../constants/gameConfig';
+import { ASSETS, SCENES } from '../../constants/gameConfig';
 
 export class Preloader extends Scene {
     constructor() {
-        super('Preloader');
+        super(SCENES.PRELOADER);
     }
 
     init() {
@@ -44,7 +44,7 @@ export class Preloader extends Scene {
                 const main_camera = this.cameras.main.fadeOut(500, 0, 0, 0);
                 // Fadeout complete
                 main_camera.once("camerafadeoutcomplete", () => {
-                    this.scene.start('MainMenu');
+                    this.scene.start(SCENES.MAIN_MENU);
                 });
             }
         });

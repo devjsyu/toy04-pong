@@ -1,9 +1,10 @@
 import { Scene, Actions } from 'phaser';
+import { ASSETS, SCENES } from '../../constants/gameConfig';
 
 export class MainMenu extends Scene {
 
     constructor() {
-        super('MainMenu');
+        super(SCENES.MAIN_MENU);
     }
 
     create() {
@@ -36,11 +37,14 @@ export class MainMenu extends Scene {
             delay: 1000,
             callback: () => {
                 this.input.keyboard?.once('keydown', () => {
-                    this.scene.start('Game');
+                    this.cameras.main.fadeOut(500, 0, 0, 0);
+                    this.cameras.main.once('camerafadeoutcomplete', () => {
+                        this.scene.start(SCENES.GAME);
+                    });
                 });
             }
         });
 
-        this.sound.play('win');
+        this.sound.play(ASSETS.SOUND_WIN);
     }
 }
