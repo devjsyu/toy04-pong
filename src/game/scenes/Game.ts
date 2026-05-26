@@ -8,6 +8,9 @@ export class Game extends Phaser.Scene {
     paddle2!: Paddle;
     ball!: Ball;
 
+    // 게임 종료 상태를 추적하는 플래그
+    private isGameOver: boolean = false;
+
     // string 대신 PlayerEnum을 키로 사용하여 타입 안전성을 높이기
     private scores: Record<PlayerEnum, number> = {
         [PlayerEnum.One]: 0,
@@ -19,6 +22,8 @@ export class Game extends Phaser.Scene {
     }
 
     create() {
+        this.isGameOver = false;
+
         this.cameras.main.fadeIn(500, 0, 0, 0);
         this.cameras.main.setBackgroundColor(0x000000);
 
@@ -66,6 +71,11 @@ export class Game extends Phaser.Scene {
             delay: 1000,
             callback: () => {
                 this.input.keyboard?.once('keydown-ENTER', () => {
+                    // 이미 게임이 종료 중이라면 무시
+                    if (this.isGameOver) return;
+                    
+                    this.isGameOver = true;
+                    this.physics.pause();
                     this.cameras.main.fadeOut(500, 0, 0, 0);
                     this.cameras.main.once('camerafadeoutcomplete', () => {
                         this.scene.stop(SCENES.HUD);
@@ -77,6 +87,9 @@ export class Game extends Phaser.Scene {
     }
 
     update() {
+        // 게임이 종료되었다면 로직 업데이트 중단
+        if (this.isGameOver) return;
+
         this.paddle1.update();
         this.paddle2.update();
 
@@ -84,14 +97,20 @@ export class Game extends Phaser.Scene {
     }
 
     private checkScore() {
+        if (this.isGameOver) return;
+
         if (this.ball.x < 0 || this.ball.x > this.scale.width) {
             const scorer = this.ball.x < 0 ? PlayerEnum.Two : PlayerEnum.One;
-            
+
             this.scores[scorer]++;
             const currentScore = this.scores[scorer];
             this.game.events.emit(EVENTS.SCORE_UPDATED, scorer, currentScore);
 
             if (currentScore >= WINNING_SCORE) {
+                this.isGameOver = true;
+                // 물리 엔진도 멈춰서 공이 계속 움직이지 않게 합니다.
+                this.physics.pause();
+
                 this.sound.play(ASSETS.SOUND_WIN);
 
                 this.cameras.main.fadeOut(500, 0, 0, 0);
