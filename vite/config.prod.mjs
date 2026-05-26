@@ -10,16 +10,17 @@ const phasermsg = () => {
             const line = "---------------------------------------------------------";
             const msg = `❤️❤️❤️ Tell us about your game! - games@phaser.io ❤️❤️❤️`;
             process.stdout.write(`${line}\n${msg}\n${line}\n`);
-            
+
             process.stdout.write(`✨ Done ✨\n`);
         }
     }
-}   
+}
 
 export default defineConfig({
-    base: './',
+    base: '/toy04-pong/',
     logLevel: 'warning',
     build: {
+        outDir: 'dist', // 빌드 결과물이 저장될 폴더 이름
         rollupOptions: {
             output: {
                 manualChunks: {
