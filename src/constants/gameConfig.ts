@@ -1,4 +1,15 @@
 export enum PlayerEnum {
-    One = 'PLAYER 1',
-    Two = 'PLAYER 2'
+    One = 'Player 1',
+    Two = 'Player 2'
 }
+
+export const WINNING_SCORE = 3;
+
+export const ASSETS = {
+    PADDLE: 'white_square',
+    BALL: 'white_circle',
+    SOUND_WIN: 'win',
+    SOUND_BOUNCE: 'ball-bounce',
+    SOUND_SCORE: 'change-score',
+    FONT: 'PressStart2P'
+} as const;

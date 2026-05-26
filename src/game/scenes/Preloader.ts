@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { ASSETS } from '../../constants/gameConfig';
 
 export class Preloader extends Scene {
     constructor() {
@@ -20,12 +21,12 @@ export class Preloader extends Scene {
         );
 
         // 사각형 텍스처 생성 (20x100)
-        this.generateBaseTexture('white_square', 20, 160, (g) => {
+        this.generateBaseTexture(ASSETS.PADDLE, 20, 160, (g) => {
             g.fillRect(0, 0, 20, 160);
         });
 
         // 원형 텍스처 생성 (지름 20px이므로 가로세로 20, 반지름은 10)
-        this.generateBaseTexture('white_circle', 20, 20, (g) => {
+        this.generateBaseTexture(ASSETS.BALL, 20, 20, (g) => {
             // 원은 중심점을 기준으로 그려지므로 가로세로 20 크기 상자 안에 쏙 들어가려면 (10, 10) 위치에 반지름 10으로 그립니다.
             g.fillCircle(10, 10, 10);
         });

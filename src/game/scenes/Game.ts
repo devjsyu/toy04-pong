@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { Ball } from '../gameobjects/Ball';
 import { Paddle } from '../gameobjects/Paddle';
-import { PlayerEnum } from '../../constants/gameConfig';
+import { PlayerEnum, WINNING_SCORE, ASSETS } from '../../constants/gameConfig';
 
 export class Game extends Phaser.Scene {
     paddle1!: Paddle;
@@ -110,7 +110,7 @@ export class Game extends Phaser.Scene {
             const currentScore = (this.registry.get(scorer) || 0) + 1;
             this.registry.set(scorer, currentScore);
 
-            if (currentScore >= 3) {
+            if (currentScore >= WINNING_SCORE) {
                 this.sound.play('win');
 
                 this.scene.stop('Hud');
