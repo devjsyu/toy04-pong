@@ -7,13 +7,6 @@ export class Game extends Phaser.Scene {
     paddle1!: Paddle;
     paddle2!: Paddle;
     ball!: Ball;
-    wasdKeys?: {
-        W: Phaser.Input.Keyboard.Key;
-        A: Phaser.Input.Keyboard.Key;
-        S: Phaser.Input.Keyboard.Key;
-        D: Phaser.Input.Keyboard.Key;
-    };
-    cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
 
     constructor() {
         super('Game');
@@ -31,8 +24,8 @@ export class Game extends Phaser.Scene {
         this.scene.run('Hud');
 
         this.ball = new Ball(this, this.scale.width / 2, this.scale.height / 2);
-        this.paddle1 = new Paddle(this, 20, this.scale.height / 2);
-        this.paddle2 = new Paddle(this, this.scale.width - 20, this.scale.height / 2);
+        this.paddle1 = new Paddle(this, 20, this.scale.height / 2, PlayerEnum.One);
+        this.paddle2 = new Paddle(this, this.scale.width - 20, this.scale.height / 2, PlayerEnum.Two);
 
         const paddles = [this.paddle1, this.paddle2];
 
@@ -59,16 +52,6 @@ export class Game extends Phaser.Scene {
             this
         );
 
-        if (this.input.keyboard) {
-            this.wasdKeys = {
-                W: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
-                A: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
-                S: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
-                D: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
-            }
-            this.cursors = this.input.keyboard.createCursorKeys();
-        }
-
         // Press any key to start
         this.time.addEvent({
             delay: 1000,
@@ -82,27 +65,8 @@ export class Game extends Phaser.Scene {
     }
 
     update() {
-        if (!this.wasdKeys || !this.cursors || !this.paddle1 || !this.paddle2) return;
-
-        if (this.wasdKeys?.W.isDown) {
-            this.paddle1.moveUp();
-        }
-        else if (this.wasdKeys?.S.isDown) {
-            this.paddle1.moveDown();
-        }
-        else {
-            this.paddle1.stopMove();
-        }
-
-        if (this.cursors.up.isDown) {
-            this.paddle2.moveUp();
-        }
-        else if (this.cursors.down.isDown) {
-            this.paddle2.moveDown();
-        }
-        else {
-            this.paddle2.stopMove();
-        }
+        this.paddle1.update();
+        this.paddle2.update();
 
         if (this.ball.x < 0 || this.ball.x > this.scale.width) {
             const scorer = this.ball.x < 0 ? PlayerEnum.Two : PlayerEnum.One;

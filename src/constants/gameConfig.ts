@@ -12,4 +12,6 @@ export const ASSETS = {
     SOUND_BOUNCE: 'ball-bounce',
     SOUND_SCORE: 'change-score',
     FONT: 'PressStart2P'
-} as const;
+}
+
+export const PADDLE_SPEED = 800;
