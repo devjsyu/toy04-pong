@@ -31,8 +31,14 @@ export class Game extends Phaser.Scene {
     init(data: { ticket: string; roomId: string }) {
         this.roomId = data.roomId;
 
+        // 전달받은 방 ID와 티켓이 정상인지 콘솔로 확인
+        console.log(`[Socket Init] RoomID: ${data.roomId}, Ticket: ${data.ticket}`);
+
         // 환경 변수에서 Nginx 프록시 주소 가져오기
         const socketUrl = import.meta.env.VITE_SOCKET_SERVER_URL;
+
+        // 변수 주입이 실패했는지 주소를 명확히 출력하여 검증
+        console.log(`[Socket URL] Target Endpoint: ${socketUrl}`);
 
         // Nginx 리버스 프록시가 작동 중인 메인 도메인을 주소로 지정
         // nginx.conf에서 지정된 경로를 통해 Node.js 서버로 내부적으로 연결하여 티켓 보내기
@@ -46,6 +52,9 @@ export class Game extends Phaser.Scene {
 
     // 게임 요소 배치 및 소켓 이벤트 등록
     create() {
+        // 소켓 인스턴스가 성공적으로 생성되었는지 객체 상태 체크
+        console.log('[Socket Instance]', this.socket);
+
         // 소켓 연결 성공하면 서버의 Room에 조인 요청
         this.socket.on('connect', () => {
             console.log('Connected to Node.js Game Server');
@@ -109,6 +118,7 @@ export class Game extends Phaser.Scene {
         // 인증 실패 등으로 소켓 연결 에러가 났을 때 처리
         this.socket.on('connect_error', (err) => {
             console.error('Socket Connection Error:', err.message);
+            console.error('Socket Connection Error Details:', err);
             alert('게임 서버 인증에 실패했습니다.');
         });
 
