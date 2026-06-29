@@ -49,6 +49,6 @@ export class MainMenu extends Scene {
             }
         });
 
-        this.sound.play(ASSETS.SOUND_WIN);
+        this.sound.play(ASSETS.SOUND_WIN, { volume: 0.5 });
     }
 }

@@ -86,7 +86,7 @@ export class Game extends Phaser.Scene {
             if (data.isGameOver) {
                 this.isGameOver = true;
                 this.physics.pause();
-                this.sound.play(ASSETS.SOUND_WIN);
+                this.sound.play(ASSETS.SOUND_WIN, { volume: 0.5 });
 
                 this.cameras.main.fadeOut(500, 0, 0, 0);
                 this.cameras.main.once('camerafadeoutcomplete', () => {
@@ -269,7 +269,7 @@ export class Game extends Phaser.Scene {
                 // 물리 엔진도 멈춰서 공이 계속 움직이지 않게 합니다.
                 this.physics.pause();
 
-                this.sound.play(ASSETS.SOUND_WIN);
+                this.sound.play(ASSETS.SOUND_WIN, { volume: 0.5 });
 
                 this.cameras.main.fadeOut(500, 0, 0, 0);
                 this.cameras.main.once('camerafadeoutcomplete', () => {

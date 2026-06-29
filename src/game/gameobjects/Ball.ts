@@ -49,10 +49,10 @@ export class Ball extends Phaser.Physics.Arcade.Image {
             this.setVelocityY(this.body.velocity.y * 1.1);
         }
 
-        this.scene.sound.play('ball-bounce');
+        this.scene.sound.play('ball-bounce', { volume: 0.5 });
     }
 
     public hitWall() {
-        this.scene.sound.play('ball-bounce');
+        this.scene.sound.play('ball-bounce', { volume: 0.5 });
     }
 }
