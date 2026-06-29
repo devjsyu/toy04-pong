@@ -31,8 +31,13 @@ export class Game extends Phaser.Scene {
     init(data: { ticket: string; roomId: string }) {
         this.roomId = data.roomId;
 
-        // 현재 도메인(Nginx Proxy)을 통해 Node.js 서버로 연결을 시도하며 티켓 보내기
-        this.socket = io({
+        // 환경 변수에서 Nginx 프록시 주소 가져오기
+        const socketUrl = import.meta.env.VITE_SOCKET_SERVER_URL;
+
+        // Nginx 리버스 프록시가 작동 중인 메인 도메인을 주소로 지정
+        // nginx.conf에서 지정된 경로를 통해 Node.js 서버로 내부적으로 연결하여 티켓 보내기
+        this.socket = io(socketUrl, {
+            transports: ["websocket", "polling"],
             auth: {
                 token: data.ticket
             }
