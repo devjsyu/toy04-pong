@@ -24,6 +24,8 @@ jobs:
         run: npm install
       - name: Build
         run: npm run build
+        env:
+          VITE_SOCKET_SERVER_URL: ${{ vars.VITE_SOCKET_SERVER_URL }}
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact
