@@ -37,9 +37,13 @@ export class MainMenu extends Scene {
             delay: 1000,
             callback: () => {
                 this.input.keyboard?.once('keydown', () => {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const ticket = urlParams.get('ticket');
+                    const roomId = urlParams.get('room');    
+
                     this.cameras.main.fadeOut(500, 0, 0, 0);
                     this.cameras.main.once('camerafadeoutcomplete', () => {
-                        this.scene.start(SCENES.GAME);
+                        this.scene.start(SCENES.GAME, { ticket, roomId });
                     });
                 });
             }

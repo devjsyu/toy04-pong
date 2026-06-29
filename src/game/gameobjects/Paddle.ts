@@ -3,14 +3,19 @@ import { PlayerEnum, ASSETS, PADDLE_SPEED } from '../../constants/gameConfig';
 
 export class Paddle extends Phaser.Physics.Arcade.Image {
     private playerEnum: PlayerEnum;
-    // 키가 없을 수도 있으므로 optional (?)로 선언
+    private isRemote: boolean = false;
     private up?: Phaser.Input.Keyboard.Key;
     private down?: Phaser.Input.Keyboard.Key;
+    private upW?: Phaser.Input.Keyboard.Key;
+    private downS?: Phaser.Input.Keyboard.Key;
+    private targetY: number;
 
-    constructor(scene: Phaser.Scene, x: number, y: number, playerEnum: PlayerEnum) {
+    constructor(scene: Phaser.Scene, x: number, y: number, playerEnum: PlayerEnum, isRemote: boolean = false) {
         super(scene, x, y, ASSETS.PADDLE);
 
         this.playerEnum = playerEnum;
+        this.isRemote = isRemote;
+        this.targetY = y;
 
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
@@ -18,28 +23,42 @@ export class Paddle extends Phaser.Physics.Arcade.Image {
         this.setCollideWorldBounds(true);
         this.setImmovable(true);
 
-        const keyboard = this.scene.input.keyboard;
-        if (keyboard) {
-            if (this.playerEnum === PlayerEnum.One) {
-                this.up = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
-                this.down = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
-            } else {
+        if (!this.isRemote) {
+            const keyboard = this.scene.input.keyboard;
+            if (keyboard) {
+                // local paddle always uses arrow keys and W/S
                 this.up = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
                 this.down = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
+                this.upW = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+                this.downS = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
             }
         }
     }
 
-    update() {
-        if (!this.up || !this.down) return;
+    public setTargetY(y: number): void {
+        this.targetY = y;
+    }
 
-        if (this.up.isDown) {
+    update() {
+        if (this.isRemote) {
+            // Smoothly interpolate Y position
+            this.y = Phaser.Math.Linear(this.y, this.targetY, 0.2);
+            return;
+        }
+
+        let isMovingUp = false;
+        let isMovingDown = false;
+
+        if (this.up?.isDown) isMovingUp = true;
+        if (this.upW?.isDown) isMovingUp = true;
+        if (this.down?.isDown) isMovingDown = true;
+        if (this.downS?.isDown) isMovingDown = true;
+
+        if (isMovingUp) {
             this.moveUp();
-        }
-        else if (this.down.isDown) {
+        } else if (isMovingDown) {
             this.moveDown();
-        }
-        else {
+        } else {
             this.stopMove();
         }
     }

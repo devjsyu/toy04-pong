@@ -3,7 +3,7 @@ import * as Phaser from 'phaser';
 export class Ball extends Phaser.Physics.Arcade.Image {
     private ballSpeed: number = 400;
 
-    constructor(scene: Phaser.Scene, x: number, y: number) {
+    constructor(scene: Phaser.Scene, x: number, y: number, startFrozen: boolean = false) {
         super(scene, x, y, 'white_circle');
 
         scene.add.existing(this);
@@ -13,7 +13,13 @@ export class Ball extends Phaser.Physics.Arcade.Image {
         scene.physics.world.setBoundsCollision(false, false, true, true);
         this.setBounce(1, 1);
 
-        this.resetBall();
+        if (!startFrozen) {
+            this.resetBall();
+        } else {
+            this.setPosition(x, y);
+            this.setVelocity(0, 0);
+            this.setAlpha(0.5);
+        }
 
         if (this.body instanceof Phaser.Physics.Arcade.Body) {
             this.body.onWorldBounds = true;
