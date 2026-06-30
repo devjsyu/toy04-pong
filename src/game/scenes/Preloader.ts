@@ -37,7 +37,6 @@ export class Preloader extends Scene {
     }
 
     create() {
-        //  Move to the MainMenu. You could also swap this for a Scene Transition, such as a camera fade.
         this.time.addEvent({
             delay: 1000,
             callback: () => {

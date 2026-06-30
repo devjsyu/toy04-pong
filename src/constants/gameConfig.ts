@@ -18,6 +18,7 @@ export const SCENES = {
     BOOT: 'Boot',
     PRELOADER: 'Preloader',
     MAIN_MENU: 'MainMenu',
+    LOBBY: 'Lobby',
     GAME: 'Game',
     HUD: 'Hud',
     GAME_OVER: 'GameOver'

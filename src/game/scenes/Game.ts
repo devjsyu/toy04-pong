@@ -2,19 +2,16 @@ import * as Phaser from 'phaser';
 import { Ball } from '../gameobjects/Ball';
 import { Paddle } from '../gameobjects/Paddle';
 import { PlayerEnum, WINNING_SCORE, ASSETS, SCENES, EVENTS } from '../../constants/gameConfig';
-import { io, Socket } from 'socket.io-client';
+import { Socket } from 'socket.io-client';
 
 export class Game extends Phaser.Scene {
     paddle1!: Paddle;
     paddle2!: Paddle;
     ball!: Ball;
     private socket!: Socket;
-    private roomId!: string;
     private isHost: boolean = false;
     private isRoleAssigned: boolean = false;
     private isGameStarted: boolean = false;
-
-    // 게임 종료 상태를 추적하는 플래그
     private isGameOver: boolean = false;
 
     // string 대신 PlayerEnum을 키로 사용하여 타입 안전성을 높이기
@@ -23,61 +20,42 @@ export class Game extends Phaser.Scene {
         [PlayerEnum.Two]: 0
     };
 
+    // Guest(손님) 렌더링용 변수
+    private targetBallX: number = 0;
+    private targetBallY: number = 0;
+    private firstBallRender: boolean = true;
+
+    // 틱 레이트 제한용 타이머
+    private lastPaddleSentTime: number = 0;
+    private lastBallSentTime: number = 0;
+
     constructor() {
         super(SCENES.GAME);
     }
 
-    // 다른 씬에서 넘겨준 데이터 받기
-    init(data: { ticket: string; roomId: string }) {
-        this.roomId = data.roomId;
-
-        // 전달받은 방 ID와 티켓이 정상인지 콘솔로 확인
-        console.log(`[Socket Init] RoomID: ${data.roomId}, Ticket: ${data.ticket}`);
-
-        // 환경 변수에서 Nginx 프록시 주소 가져오기
-        const socketUrl = import.meta.env.VITE_SOCKET_SERVER_URL;
-
-        // 변수 주입이 실패했는지 주소를 명확히 출력하여 검증
-        console.log(`[Socket URL] Target Endpoint: ${socketUrl}`);
-
-        // Nginx 리버스 프록시가 작동 중인 메인 도메인을 주소로 지정
-        // nginx.conf에서 지정된 경로를 통해 Node.js 서버로 내부적으로 연결하여 티켓 보내기
-        this.socket = io(socketUrl, {
-            transports: ["websocket", "polling"],
-            auth: {
-                token: data.ticket
-            }
-        });
+    // Lobby 씬으로부터 전달받은 소켓 및 역할 정보 바인딩
+    init(data: { socket: Socket; role: string }) {
+        this.socket = data.socket;
+        this.isHost = (data.role === 'host');
+        console.log(`[Game Init] Role: ${data.role}`);
     }
 
     // 게임 요소 배치 및 소켓 이벤트 등록
     create() {
-        // 소켓 인스턴스가 성공적으로 생성되었는지 객체 상태 체크
-        console.log('[Socket Instance]', this.socket);
+        console.log('[Game Create] Socket Instance', this.socket);
 
-        // 소켓 연결 성공하면 서버의 Room에 조인 요청
-        this.socket.on('connect', () => {
-            console.log('Connected to Node.js Game Server');
-            this.socket.emit('joinRoom', this.roomId);
-        });
+        // 1. 게임 오브젝트 셋업 (이미 역할이 정해졌으므로 즉시 실행)
+        this.setupGameObjects();
 
-        // 역할 할당 이벤트 수신 (서버에서 소켓의 입장 순서에 따라 발송)
-        this.socket.on('assignRole', (data: { role: string }) => {
-            console.log('Role assigned:', data.role);
-            this.isHost = (data.role === 'host');
-            this.setupGameObjects();
-        });
+        // 2. 본격적인 게임(공 움직임) 시작
+        this.onGameStart();
 
-        // 게임 시작 이벤트 수신 (두 플레이어가 모두 참여했을 때)
-        this.socket.on('gameStart', () => {
-            this.onGameStart();
-        });
-
-        // 서버로부터 상대방의 움직임 이벤트 들을 준비
+        // 3. 인게임 소켓 이벤트 리스너 등록
+        
+        // 상대방 패들 움직임 수신
         this.socket.on('opponentMove', (data: { y: number }) => {
             if (!this.isRoleAssigned) return;
 
-            // 상대방 패들의 Y 좌표 동기화 로직 수행
             if (this.isHost) {
                 this.paddle2.setTargetY(data.y);
             } else {
@@ -85,13 +63,22 @@ export class Game extends Phaser.Scene {
             }
         });
 
-        // Guest (Player 2) receives ball render position from the server
+        // Guest가 서버로부터 공 위치 수신
         this.socket.on('ballRender', (data: { x: number; y: number }) => {
             if (!this.isRoleAssigned || this.isHost) return;
-            this.ball.setPosition(data.x, data.y);
+            
+            if (this.firstBallRender) {
+                this.ball.setPosition(data.x, data.y);
+                this.targetBallX = data.x;
+                this.targetBallY = data.y;
+                this.firstBallRender = false;
+            } else {
+                this.targetBallX = data.x;
+                this.targetBallY = data.y;
+            }
         });
 
-        // Handle score/game state synchronization from the Host (Player 1)
+        // 점수/게임 상태 동기화 수신
         this.socket.on('scoreUpdate', (data: { scores: Record<PlayerEnum, number>; isGameOver: boolean; winner?: PlayerEnum }) => {
             this.scores = data.scores;
             this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.One, this.scores[PlayerEnum.One]);
@@ -112,31 +99,37 @@ export class Game extends Phaser.Scene {
                 if (this.ball) {
                     this.ball.setAlpha(0.5);
                 }
+                this.firstBallRender = true; // 공 리셋 시 보간 튀는 현상 방지
             }
         });
 
-        // 인증 실패 등으로 소켓 연결 에러가 났을 때 처리
-        this.socket.on('connect_error', (err) => {
-            console.error('Socket Connection Error:', err.message);
-            console.error('Socket Connection Error Details:', err);
-            alert('게임 서버 인증에 실패했습니다.');
+        // 인게임 도중 상대방이 연결을 끊었을 때
+        this.socket.on('opponentLeft', () => {
+            console.log('[Game] Opponent Left.');
+            alert('상대방이 게임에서 퇴장했습니다.');
+            this.isGameOver = true;
+            this.physics.pause();
+            if (this.ball) {
+                this.ball.setVelocity(0, 0);
+            }
         });
 
-        // 씬 종료 시 소켓 연결 해제 (메모리 누수 방지)
+        // 씬 종료 시 리스너 및 소켓 정리 (메모리 누수 방지)
         this.events.once('shutdown', () => {
             if (this.socket) {
+                this.socket.off('opponentMove');
+                this.socket.off('ballRender');
+                this.socket.off('scoreUpdate');
+                this.socket.off('opponentLeft');
                 this.socket.disconnect();
             }
         });
 
         this.isGameOver = false;
-        this.isRoleAssigned = false;
-        this.isGameStarted = false;
 
         this.cameras.main.fadeIn(500, 0, 0, 0);
         this.cameras.main.setBackgroundColor(0x000000);
 
-        // 점수 내부 변수 초기화 및 초기 UI 반영을 위한 이벤트 발행
         this.scores[PlayerEnum.One] = 0;
         this.scores[PlayerEnum.Two] = 0;
 
@@ -147,13 +140,12 @@ export class Game extends Phaser.Scene {
     private setupGameObjects() {
         if (this.isRoleAssigned) return;
 
-        // HUD 씬을 병렬로 실행합니다.
         this.scene.run(SCENES.HUD);
 
-        // Ball is initially created frozen
+        // Ball 생성 (처음에는 멈춤 상태)
         this.ball = new Ball(this, this.scale.width / 2, this.scale.height / 2, true);
 
-        // Disable physics for Guest ball
+        // Guest 로직: 자체적인 공 물리 연산 완전히 비활성화(Disable)
         if (!this.isHost) {
             if (this.ball.body instanceof Phaser.Physics.Arcade.Body) {
                 this.ball.body.enable = false;
@@ -167,7 +159,7 @@ export class Game extends Phaser.Scene {
 
         const paddles = [this.paddle1, this.paddle2];
 
-        // Host handles collisions and bounds
+        // Host 로직: 공의 물리 연산(벽 충돌, 패들 충돌, 점수 판정) 활성화 및 직접 계산
         if (this.isHost) {
             this.physics.add.collider(
                 this.ball,
@@ -176,8 +168,8 @@ export class Game extends Phaser.Scene {
                     const currentBall = ballObj as Ball;
                     currentBall.hitPaddle();
                 },
-                undefined, // processCallback은 사용하지 않으므로 무시
-                this // 콜백이 실행될 컨텍스트 환경을 지정
+                undefined,
+                this
             );
 
             this.physics.world.setBoundsCollision(false, false, true, true);
@@ -207,55 +199,41 @@ export class Game extends Phaser.Scene {
     }
 
     update() {
-        // 게임이 종료되었거나 역할이 할당되지 않았다면 로직 업데이트 중단
         if (this.isGameOver || !this.isRoleAssigned) return;
 
         this.paddle1.update();
         this.paddle2.update();
 
+        // Guest의 공 렌더링 (보간)
+        if (!this.isHost && this.ball) {
+            this.ball.x = Phaser.Math.Linear(this.ball.x, this.targetBallX, 0.3);
+            this.ball.y = Phaser.Math.Linear(this.ball.y, this.targetBallY, 0.3);
+        }
+
         if (this.isHost) {
             this.checkScore();
-            this.emitBallPosition();
         }
 
-        // Emit local paddle position
-        const localPaddle = this.isHost ? this.paddle1 : this.paddle2;
-        this.emitPaddlePosition(localPaddle.y);
-    }
-
-    private lastPaddleSentY: number = -1;
-    private lastPaddleSentTime: number = 0;
-
-    private emitPaddlePosition(y: number) {
-        if (!this.socket || !this.socket.connected) return;
-
         const now = Date.now();
-        // Check if Y has changed significantly and throttle check (e.g. 33ms or 30Hz)
-        if (Math.abs(y - this.lastPaddleSentY) > 0.5 && now - this.lastPaddleSentTime > 33) {
-            this.socket.emit("paddleMove", { roomId: this.roomId, y });
-            this.lastPaddleSentY = y;
-            this.lastPaddleSentTime = now;
+
+        // 내 패들 이동 좌표를 paddleMove 이벤트로 30Hz마다 서버에 발송
+        if (now - this.lastPaddleSentTime > 33) {
+            const localPaddle = this.isHost ? this.paddle1 : this.paddle2;
+            if (localPaddle) {
+                this.socket.emit("paddleMove", { y: localPaddle.y });
+                this.lastPaddleSentTime = now;
+            }
         }
-    }
 
-    private lastBallSentX: number = -1;
-    private lastBallSentY: number = -1;
-    private lastBallSentTime: number = 0;
-
-    private emitBallPosition() {
-        if (!this.socket || !this.socket.connected) return;
-
-        const now = Date.now();
-        // Throttle check (e.g. 33ms or 30Hz)
-        if (now - this.lastBallSentTime > 33) {
-            this.socket.emit("ballUpdate", {
-                roomId: this.roomId,
-                x: this.ball.x,
-                y: this.ball.y
-            });
-            this.lastBallSentX = this.ball.x;
-            this.lastBallSentY = this.ball.y;
-            this.lastBallSentTime = now;
+        // Host: 계산된 공의 현재 좌표를 ballUpdate 이벤트로 30Hz마다 서버에 지속 발송
+        if (this.isHost && this.ball && this.isGameStarted) {
+            if (now - this.lastBallSentTime > 33) {
+                this.socket.emit("ballUpdate", {
+                    x: this.ball.x,
+                    y: this.ball.y
+                });
+                this.lastBallSentTime = now;
+            }
         }
     }
 
@@ -271,9 +249,8 @@ export class Game extends Phaser.Scene {
 
             const isWin = currentScore >= WINNING_SCORE;
 
-            // Host emits scoreUpdate to server so Guest can synchronize
+            // Host가 점수 업데이트 이벤트를 서버에 전송
             this.socket.emit('scoreUpdate', {
-                roomId: this.roomId,
                 scores: this.scores,
                 isGameOver: isWin,
                 winner: isWin ? scorer : undefined
@@ -281,7 +258,6 @@ export class Game extends Phaser.Scene {
 
             if (isWin) {
                 this.isGameOver = true;
-                // 물리 엔진도 멈춰서 공이 계속 움직이지 않게 합니다.
                 this.physics.pause();
 
                 this.sound.play(ASSETS.SOUND_WIN, { volume: 0.5 });
@@ -293,7 +269,6 @@ export class Game extends Phaser.Scene {
                 });
             } else {
                 this.sound.play(ASSETS.SOUND_SCORE, { volume: 0.5 });
-
                 this.ball.resetBall();
             }
         }
