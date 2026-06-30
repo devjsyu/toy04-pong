@@ -20,6 +20,13 @@ export class Preloader extends Scene {
             'truetype'
         );
 
+        this.load.font(
+            'Mona12-Bold',
+            'fonts/Mona12-Bold.ttf',
+            'truetype'
+        );
+
+
         // 사각형 텍스처 생성 (20x100)
         this.generateBaseTexture(ASSETS.PADDLE, 20, 160, (g) => {
             g.fillRect(0, 0, 20, 160);

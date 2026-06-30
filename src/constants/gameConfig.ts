@@ -10,8 +10,7 @@ export const ASSETS = {
     BALL: 'white_circle',
     SOUND_WIN: 'win',
     SOUND_BOUNCE: 'ball-bounce',
-    SOUND_SCORE: 'change-score',
-    FONT: 'PressStart2P'
+    SOUND_SCORE: 'change-score'
 } as const;
 
 export const SCENES = {

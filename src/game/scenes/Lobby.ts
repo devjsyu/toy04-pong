@@ -40,7 +40,7 @@ export class Lobby extends Scene {
 
         // 대기 텍스트 렌더링
         this.waitingText = this.add.text(this.scale.width / 2, this.scale.height / 2, '연결 중...', {
-            fontFamily: 'PressStart2P',
+            fontFamily: 'Mona12-Bold',
             fontSize: 24,
             color: '#ffffff',
             align: 'center'
