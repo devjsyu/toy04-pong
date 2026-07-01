@@ -25,6 +25,9 @@ export class Game extends Phaser.Scene {
     private targetBallY: number = 0;
     private firstBallRender: boolean = true;
 
+    // 틱 레이트와 상관없이 충돌 시 즉시 Guest에게 알리기 위한 변수
+    private nextCollisionSFX: 'none' | 'paddle' | 'wall' = 'none';
+
     // 틱 레이트 제한용 타이머
     private lastPaddleSentTime: number = 0;
     private lastBallSentTime: number = 0;
@@ -56,19 +59,24 @@ export class Game extends Phaser.Scene {
         this.socket.on('opponentMove', (data: { y: number }) => {
             if (!this.isRoleAssigned) return;
 
+            // 정확한 Guest 물리 충돌 판정 위해 보간 없이 y 좌표 즉시 대입 
             if (this.isHost) {
-                this.paddle2.setTargetY(data.y);
+                this.paddle2.y = data.y; // Host 관점에서 Guest의 Paddle은 즉시 동기화
+                if (this.paddle2.body) this.paddle2.body.updateFromGameObject();
             } else {
+                // 물리 충돌 판정 책임이 없는 Guest는 보간 활용하여 렌더링
                 this.paddle1.setTargetY(data.y);
             }
         });
 
         // Guest가 서버로부터 공 위치 수신
-        this.socket.on('ballRender', (data: { x: number; y: number }) => {
+        this.socket.on('ballRender', (data: { x: number; y: number; sfx?: string }) => {
             if (!this.isRoleAssigned || this.isHost) return;
             
             if (this.firstBallRender) {
+                // 공의 현재 위치를 즉시 화면 정중앙으로 리셋
                 this.ball.setPosition(data.x, data.y);
+                // 다음 프레임 update() 보간 루프가 튀지 않도록 targetBall x, y 좌표도 동일하게 갱신
                 this.targetBallX = data.x;
                 this.targetBallY = data.y;
                 this.firstBallRender = false;
@@ -76,24 +84,22 @@ export class Game extends Phaser.Scene {
                 this.targetBallX = data.x;
                 this.targetBallY = data.y;
             }
+
+            if (data.sfx && ['paddle', 'wall'].includes(data.sfx)) {
+                 this.sound.play(ASSETS.SOUND_BOUNCE, { volume: 0.5 }); 
+            }
         });
 
         // 점수/게임 상태 동기화 수신
         this.socket.on('scoreUpdate', (data: { scores: Record<PlayerEnum, number>; isGameOver: boolean; winner?: PlayerEnum }) => {
+            if (this.isHost) return;
+            
             this.scores = data.scores;
             this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.One, this.scores[PlayerEnum.One]);
             this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.Two, this.scores[PlayerEnum.Two]);
 
             if (data.isGameOver) {
-                this.isGameOver = true;
-                this.physics.pause();
-                this.sound.play(ASSETS.SOUND_WIN, { volume: 0.5 });
-
-                this.cameras.main.fadeOut(500, 0, 0, 0);
-                this.cameras.main.once('camerafadeoutcomplete', () => {
-                    this.scene.stop(SCENES.HUD);
-                    this.scene.start(SCENES.GAME_OVER, { winner: data.winner });
-                });
+                this.triggerGameOverSequence(data.winner);
             } else {
                 this.sound.play(ASSETS.SOUND_SCORE, { volume: 0.5 });
                 if (this.ball) {
@@ -167,6 +173,8 @@ export class Game extends Phaser.Scene {
                 (ballObj) => {
                     const currentBall = ballObj as Ball;
                     currentBall.hitPaddle();
+                    this.nextCollisionSFX = 'paddle';
+                    this.sendBallUpdateImmediate('paddle');
                 },
                 undefined,
                 this
@@ -179,6 +187,8 @@ export class Game extends Phaser.Scene {
                 (body: Phaser.Physics.Arcade.Body, up: boolean, down: boolean) => {
                     if (body.gameObject instanceof Ball && (up || down)) {
                         body.gameObject.hitWall();
+                        this.nextCollisionSFX = 'wall';
+                        this.sendBallUpdateImmediate('wall');
                     }
                 },
                 this
@@ -216,7 +226,7 @@ export class Game extends Phaser.Scene {
 
         const now = Date.now();
 
-        // 내 패들 이동 좌표를 paddleMove 이벤트로 30Hz마다 서버에 발송
+        // (Host/Guest) 내 패들 이동 좌표를 paddleMove 이벤트로 30Hz마다 서버에 발송
         if (now - this.lastPaddleSentTime > 33) {
             const localPaddle = this.isHost ? this.paddle1 : this.paddle2;
             if (localPaddle) {
@@ -225,14 +235,16 @@ export class Game extends Phaser.Scene {
             }
         }
 
-        // Host: 계산된 공의 현재 좌표를 ballUpdate 이벤트로 30Hz마다 서버에 지속 발송
+        // (Only Host) 계산된 공의 현재 좌표를 ballUpdate 이벤트로 30Hz마다 서버에 지속 발송
         if (this.isHost && this.ball && this.isGameStarted) {
             if (now - this.lastBallSentTime > 33) {
                 this.socket.emit("ballUpdate", {
                     x: this.ball.x,
-                    y: this.ball.y
+                    y: this.ball.y,
+                    sfx: this.nextCollisionSFX // 충돌 상태 변수 추가로 얹기
                 });
                 this.lastBallSentTime = now;
+                this.nextCollisionSFX = 'none'; // 전송 완료하였으니 초기화
             }
         }
     }
@@ -257,20 +269,38 @@ export class Game extends Phaser.Scene {
             });
 
             if (isWin) {
-                this.isGameOver = true;
-                this.physics.pause();
-
-                this.sound.play(ASSETS.SOUND_WIN, { volume: 0.5 });
-
-                this.cameras.main.fadeOut(500, 0, 0, 0);
-                this.cameras.main.once('camerafadeoutcomplete', () => {
-                    this.scene.stop(SCENES.HUD);
-                    this.scene.start(SCENES.GAME_OVER, { winner: scorer });
-                });
+                this.triggerGameOverSequence(scorer);    
             } else {
                 this.sound.play(ASSETS.SOUND_SCORE, { volume: 0.5 });
                 this.ball.resetBall();
+
+                this.sendBallUpdateImmediate('none');
             }
         }
+    }
+
+    private triggerGameOverSequence(winner?: PlayerEnum) {
+        this.isGameOver = true;
+        this.physics.pause();
+
+        this.sound.play(ASSETS.SOUND_WIN, { volume: 0.5 });
+
+        this.cameras.main.fadeOut(500, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.stop(SCENES.HUD);
+            this.scene.start(SCENES.GAME_OVER, { winner });
+        });
+    }
+
+    // 충돌 시 주기적 타이머와 별개로 즉시 동기화하기 위한 헬퍼 함수
+    private sendBallUpdateImmediate(sfxType: 'none' | 'paddle' | 'wall') {
+        if (!this.ball) return;
+        this.socket.emit("ballUpdate", {
+            x: this.ball.x,
+            y: this.ball.y,
+            sfx: sfxType
+        });
+        this.lastBallSentTime = Date.now();
+        this.nextCollisionSFX = 'none';
     }
 }
