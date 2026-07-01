@@ -14,6 +14,9 @@ export class Game extends Phaser.Scene {
     private isGameStarted: boolean = false;
     private isGameOver: boolean = false;
 
+    // Host 관점에서 Guest의 Paddle을 렌더링
+    private paddle2Visual!: Phaser.GameObjects.Sprite;
+
     // string 대신 PlayerEnum을 키로 사용하여 타입 안전성을 높이기
     private scores: Record<PlayerEnum, number> = {
         [PlayerEnum.One]: 0,
@@ -165,6 +168,23 @@ export class Game extends Phaser.Scene {
 
         const paddles = [this.paddle1, this.paddle2];
 
+        // [물리-렌더 분리] Host 측에서 상대방(Guest) 패들의 시각적 요소 분리 처리
+        if (this.isHost) {
+            // 1. 실제 물리 연산용 패들은 완전 투명하게 가려 뚝뚝 끊겨 보이는 렌더링을 완전히 가림
+            this.paddle2.setAlpha(0);
+
+            // 2. 화면에 부드럽게 표현하기 위한 물리 바디 없는 렌더 전용 대역 생성
+            this.paddle2Visual = this.add.sprite(this.paddle2.x, this.paddle2.y, this.paddle2.texture.key);
+            this.paddle2Visual.setOrigin(this.paddle2.originX, this.paddle2.originY);
+            
+            if (this.paddle2.displayWidth && this.paddle2.displayHeight) {
+                this.paddle2Visual.setDisplaySize(this.paddle2.displayWidth, this.paddle2.displayHeight);
+            }
+            if (this.paddle2.tintTopLeft !== undefined) {
+                this.paddle2Visual.setTint(this.paddle2.tintTopLeft);
+            }
+        }
+
         // Host 로직: 공의 물리 연산(벽 충돌, 패들 충돌, 점수 판정) 활성화 및 직접 계산
         if (this.isHost) {
             this.physics.add.collider(
@@ -208,16 +228,33 @@ export class Game extends Phaser.Scene {
         }
     }
 
-    update() {
+    // Phaser의 내장 매개변수 time과 delta 명시적 수신
+    update(time: number, delta: number) {
         if (this.isGameOver || !this.isRoleAssigned) return;
 
-        this.paddle1.update();
-        this.paddle2.update();
+        this.paddle1.update(delta);
+        this.paddle2.update(delta);
 
-        // Guest의 공 렌더링 (보간)
+        // --- [delta time 기반 프레임 독립형 보간 계수 계산] ---
+        // 기준점: 60fps(프레임당 16.66ms 흘렀을 때 보간율 0.3)
+        // 모니터 주사율이 144Hz나 240Hz로 올라가 delta가 작아져도 일정한 속도로 보간
+        const baseFactor = 0.3;
+        const dtRatio = delta / 16.666;
+        const lerpFactor = 1 - Math.pow(1 - baseFactor, dtRatio);
+
+        // [물리-렌더 분리] Host 측: 실제 물리 패들 위치 추종 (delta 반영)
+        if (this.isHost && this.paddle2Visual) {
+            if (Math.abs(this.paddle2Visual.y - this.paddle2.y) > 100) {
+                this.paddle2Visual.y = this.paddle2.y;
+            } else {
+                this.paddle2Visual.y = Phaser.Math.Linear(this.paddle2Visual.y, this.paddle2.y, lerpFactor);
+            }
+        }
+
+        // Guest의 공 렌더링 (delta 반영)
         if (!this.isHost && this.ball) {
-            this.ball.x = Phaser.Math.Linear(this.ball.x, this.targetBallX, 0.3);
-            this.ball.y = Phaser.Math.Linear(this.ball.y, this.targetBallY, 0.3);
+            this.ball.x = Phaser.Math.Linear(this.ball.x, this.targetBallX, lerpFactor);
+            this.ball.y = Phaser.Math.Linear(this.ball.y, this.targetBallY, lerpFactor);
         }
 
         if (this.isHost) {
