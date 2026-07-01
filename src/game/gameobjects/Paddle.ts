@@ -39,10 +39,17 @@ export class Paddle extends Phaser.Physics.Arcade.Image {
         this.targetY = y;
     }
 
-    update() {
+    update(delta?: number) {
         if (this.isRemote) {
             // Smoothly interpolate Y position
-            this.y = Phaser.Math.Linear(this.y, this.targetY, 0.2);
+            // delta가 전달되지 않았을 경우를 대비해 기본값 16.666(60fps)을 지정합니다.
+            const currentDelta = delta !== undefined ? delta : 16.666;
+
+            const baseFactor = 0.3;
+            const dtRatio = currentDelta / 16.666;
+            const lerpFactor = 1 - Math.pow(1 - baseFactor, dtRatio);
+            
+            this.y = Phaser.Math.Linear(this.y, this.targetY, lerpFactor);
             return;
         }
 
