@@ -23,8 +23,16 @@ export class Lobby extends Scene {
         this.transitionedToGame = false;
 
         // Node.js 웹소켓 서버(wss://api-gallery.devjsyu.site)에 연결 (withCredentials: true)
-        this.socket = io('wss://api-gallery.devjsyu.site', {
-            transports: ["websocket"],
+        // this.socket = io('wss://api-gallery.devjsyu.site', {
+        //     transports: ["websocket"],
+        //     auth: {
+        //         token: ticket
+        //     },
+        //     withCredentials: true
+        // });
+        // 변경: 새로 구축한 라즈베리 파이 서버 주소
+        this.socket = io('wss://devjsyu.duckdns.org', {
+            transports: ['websocket'], // 레이턴시가 중요한 게임이므로 HTTP 폴링 대신 웹소켓 강제 적용 권장
             auth: {
                 token: ticket
             },
