@@ -24,7 +24,7 @@ export class Lobby extends Scene {
 
         // 변경: 새로 구축한 라즈베리 파이 서버 주소
         this.socket = io("https://devjsyu.duckdns.org", {
-            transports: ["polling", "websocket"],
+            transports: ["websocket"],
             auth: {
                 token: ticket
             }
