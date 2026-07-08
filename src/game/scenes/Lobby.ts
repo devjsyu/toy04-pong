@@ -22,17 +22,9 @@ export class Lobby extends Scene {
         console.log(`[Lobby Init] Ticket: ${ticket}`);
         this.transitionedToGame = false;
 
-        // Node.js 웹소켓 서버(wss://api-gallery.devjsyu.site)에 연결 (withCredentials: true)
-        // this.socket = io('wss://api-gallery.devjsyu.site', {
-        //     transports: ["websocket"],
-        //     auth: {
-        //         token: ticket
-        //     },
-        //     withCredentials: true
-        // });
         // 변경: 새로 구축한 라즈베리 파이 서버 주소
-        this.socket = io('https://devjsyu.duckdns.org', {
-            transports: ["websocket"], // 레이턴시가 중요한 게임이므로 HTTP 폴링 대신 웹소켓 강제 적용 권장
+        this.socket = io("https://devjsyu.duckdns.org", {
+            transports: ["polling", "websocket"],
             auth: {
                 token: ticket
             }
@@ -52,6 +44,23 @@ export class Lobby extends Scene {
             color: '#ffffff',
             align: 'center'
         }).setOrigin(0.5);
+
+        // 웹소켓 연결 및 트랜스포트(통신 방식) 업그레이드 디버깅 로그
+        this.socket.on("connect", () => {
+            const transport = this.socket.io.engine.transport.name;
+            console.log(`[Socket Connect] 연결 성공! 현재 통신 방식: ${transport}`);
+
+            this.socket.io.engine.on("upgrade", () => {
+                const upgradedTransport = this.socket.io.engine.transport.name;
+                console.log(`[Socket Upgrade] 통신 방식 업그레이드 완료: ${upgradedTransport}`);
+            });
+        });
+
+        // 소켓 연결이 끊겼을 때의 원인 분석 로그
+        this.socket.on("disconnect", (reason) => {
+            console.warn(`[Socket Disconnect] 연결이 끊겼습니다. 원인: ${reason}`);
+        });
+
 
         // 1. waiting: "상대방을 기다리는 중..." 텍스트 렌더링
         this.socket.on('waiting', () => {
