@@ -3,7 +3,7 @@ export enum PlayerEnum {
     Two = 'Player 2'
 }
 
-export const WINNING_SCORE = 3;
+export const WINNING_SCORE = 5;
 
 export const ASSETS = {
     PADDLE: 'white_square',
@@ -27,4 +27,4 @@ export const EVENTS = {
     SCORE_UPDATED: 'SCORE_UPDATED'
 } as const;
 
-export const PADDLE_SPEED = 400;
+export const PADDLE_SPEED = 300;

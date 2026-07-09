@@ -57,7 +57,7 @@ export class Game extends Phaser.Scene {
         this.onGameStart();
 
         // 3. 인게임 소켓 이벤트 리스너 등록
-        
+
         // 상대방 패들 움직임 수신
         this.socket.on('opponentMove', (data: { y: number }) => {
             if (!this.isRoleAssigned) return;
@@ -75,7 +75,11 @@ export class Game extends Phaser.Scene {
         // Guest가 서버로부터 공 위치 수신
         this.socket.on('ballRender', (data: { x: number; y: number; sfx?: string }) => {
             if (!this.isRoleAssigned || this.isHost) return;
-            
+
+            if (data.sfx && data.sfx !== 'none') {
+                console.log(`[Guest Sound Debug] SFX 수신됨: ${data.sfx}`);
+            }
+
             if (this.firstBallRender) {
                 // 공의 현재 위치를 즉시 화면 정중앙으로 리셋
                 this.ball.setPosition(data.x, data.y);
@@ -89,14 +93,14 @@ export class Game extends Phaser.Scene {
             }
 
             if (data.sfx && ['paddle', 'wall'].includes(data.sfx)) {
-                 this.sound.play(ASSETS.SOUND_BOUNCE, { volume: 0.5 }); 
+                this.sound.play(ASSETS.SOUND_BOUNCE, { volume: 0.5 });
             }
         });
 
         // 점수/게임 상태 동기화 수신
         this.socket.on('scoreUpdate', (data: { scores: Record<PlayerEnum, number>; isGameOver: boolean; winner?: PlayerEnum }) => {
             if (this.isHost) return;
-            
+
             this.scores = data.scores;
             this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.One, this.scores[PlayerEnum.One]);
             this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.Two, this.scores[PlayerEnum.Two]);
@@ -176,7 +180,7 @@ export class Game extends Phaser.Scene {
             // 2. 화면에 부드럽게 표현하기 위한 물리 바디 없는 렌더 전용 대역 생성
             this.paddle2Visual = this.add.sprite(this.paddle2.x, this.paddle2.y, this.paddle2.texture.key);
             this.paddle2Visual.setOrigin(this.paddle2.originX, this.paddle2.originY);
-            
+
             if (this.paddle2.displayWidth && this.paddle2.displayHeight) {
                 this.paddle2Visual.setDisplaySize(this.paddle2.displayWidth, this.paddle2.displayHeight);
             }
@@ -306,7 +310,7 @@ export class Game extends Phaser.Scene {
             });
 
             if (isWin) {
-                this.triggerGameOverSequence(scorer);    
+                this.triggerGameOverSequence(scorer);
             } else {
                 this.sound.play(ASSETS.SOUND_SCORE, { volume: 0.5 });
                 this.ball.resetBall();
