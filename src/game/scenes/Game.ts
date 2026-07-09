@@ -138,6 +138,13 @@ export class Game extends Phaser.Scene {
             }
         });
 
+        // 공 충돌 이벤트 리스너
+        this.socket.on('ballCollision', (data: { type: 'paddle' | 'wall' }) => {
+            if (this.isHost) return;
+
+            this.sound.play(ASSETS.SOUND_BOUNCE, { volume: 0.5 });
+        });
+
         this.isGameOver = false;
 
         this.cameras.main.fadeIn(500, 0, 0, 0);
@@ -197,8 +204,7 @@ export class Game extends Phaser.Scene {
                 (ballObj) => {
                     const currentBall = ballObj as Ball;
                     currentBall.hitPaddle();
-                    this.nextCollisionSFX = 'paddle';
-                    this.sendBallUpdateImmediate('paddle');
+                    this.socket.emit("ballCollision", { type: 'paddle' });
                 },
                 undefined,
                 this
@@ -211,8 +217,7 @@ export class Game extends Phaser.Scene {
                 (body: Phaser.Physics.Arcade.Body, up: boolean, down: boolean) => {
                     if (body.gameObject instanceof Ball && (up || down)) {
                         body.gameObject.hitWall();
-                        this.nextCollisionSFX = 'wall';
-                        this.sendBallUpdateImmediate('wall');
+                        this.socket.emit("ballCollision", { type: 'wall' });
                     }
                 },
                 this
