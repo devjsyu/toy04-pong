@@ -28,8 +28,8 @@ export class Preloader extends Scene {
 
 
         // 사각형 텍스처 생성 (20x100)
-        this.generateBaseTexture(ASSETS.PADDLE, 20, 160, (g) => {
-            g.fillRect(0, 0, 20, 80);
+        this.generateBaseTexture(ASSETS.PADDLE, 20, 40, (g) => {
+            g.fillRect(0, 0, 20, 40);
         });
 
         // 원형 텍스처 생성 (지름 20px이므로 가로세로 20, 반지름은 10)
