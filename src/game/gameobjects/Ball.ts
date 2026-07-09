@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 
 export class Ball extends Phaser.Physics.Arcade.Image {
-    private ballSpeed: number = 400;
+    private ballSpeed: number = 300;
 
     constructor(scene: Phaser.Scene, x: number, y: number, startFrozen: boolean = false) {
         super(scene, x, y, 'white_circle');
@@ -43,12 +43,6 @@ export class Ball extends Phaser.Physics.Arcade.Image {
     }
 
     public hitPaddle() {
-        // Increase the ball speed slightly on each bounce
-        if (this.body instanceof Phaser.Physics.Arcade.Body) {
-            this.setVelocityX(this.body.velocity.x * 1.1);
-            this.setVelocityY(this.body.velocity.y * 1.1);
-        }
-
         this.scene.sound.play('ball-bounce', { volume: 0.5 });
     }
 
