@@ -194,6 +194,10 @@ export class Game extends Phaser.Scene {
         this.paddle1.update(delta);
         this.paddle2.update(delta);
 
+        if (this.ball) {
+            this.ball.update(delta);
+        }
+
         if (this.isHost) {
             this.checkScore();
         }

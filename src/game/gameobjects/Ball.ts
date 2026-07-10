@@ -25,10 +25,13 @@ export class Ball extends Phaser.Physics.Arcade.Image {
         } else {
             // Guest 로직: 자체적인 공 물리 연산 완전히 비활성화(Disable)
             this.setAlpha(0);
+            this.setVisible(false); // 확실하게 렌더링 제외
             if (this.body instanceof Phaser.Physics.Arcade.Body) {
                 this.body.enable = false;
             }
             this.visualSprite = this.scene.add.sprite(x, y, ASSETS.BALL);
+            this.visualSprite.setOrigin(0.5, 0.5);
+            this.visualSprite.setDisplaySize(this.displayWidth, this.displayHeight);
         }
     }
 
@@ -38,24 +41,27 @@ export class Ball extends Phaser.Physics.Arcade.Image {
 
         this.setPosition(centerX, centerY);
         this.setVelocity(0, 0); // 일단 멈춤
-        this.setAlpha(0.5);    // 대기 중임을 알리기 위한 반투명 연출
 
-        // 1초 뒤에 이동 시작
-        this.scene.time.delayedCall(1000, () => {
-            if (!this.active) return;
-            this.setAlpha(1);
-            const moveX = Math.random() > 0.5 ? 1 : -1;
-            const moveY = Math.random() > 0.5 ? 1 : -1;
-            this.setVelocity(BALL_SPEED * moveX, BALL_SPEED * moveY);
-        });
-
-        if (!this.isHost && this.visualSprite) {
+        if (this.isHost) {
+            this.setAlpha(0.5);
+        } else if (this.visualSprite) {
+            this.visualSprite.setAlpha(0.5);
             this.visualSprite.setPosition(centerX, centerY);
-            // Guest의 Lerp 타겟도 중앙으로 리셋
             this.targetX = centerX;
             this.targetY = centerY;
         }
-
+        // 1초 뒤에 이동 시작
+        this.scene.time.delayedCall(1000, () => {
+            if (!this.active) return;
+            if (this.isHost) {
+                this.setAlpha(1);
+                const moveX = Math.random() > 0.5 ? 1 : -1;
+                const moveY = Math.random() > 0.5 ? 1 : -1;
+                this.setVelocity(BALL_SPEED * moveX, BALL_SPEED * moveY);
+            } else if (this.visualSprite) {
+                this.visualSprite.setAlpha(1);
+            }
+        });
     }
 
     public setTargetPosition(x: number, y: number): void {
