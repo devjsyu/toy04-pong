@@ -28,3 +28,4 @@ export const EVENTS = {
 } as const;
 
 export const PADDLE_SPEED = 300;
+export const BALL_SPEED = 200;
