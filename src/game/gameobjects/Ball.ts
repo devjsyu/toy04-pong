@@ -8,6 +8,11 @@ export class Ball extends Phaser.Physics.Arcade.Image {
 
     private visualSprite!: Phaser.GameObjects.Sprite;
 
+    private _isScoreProcessing: boolean = false;
+    public get isScoreProcessing(): boolean {
+        return this._isScoreProcessing;
+    }
+
     constructor(scene: Phaser.Scene, x: number, y: number, isHost: boolean) {
         super(scene, x, y, ASSETS.BALL);
         this.isHost = isHost;
@@ -36,11 +41,14 @@ export class Ball extends Phaser.Physics.Arcade.Image {
     }
 
     public resetBall(): void {
+        this._isScoreProcessing = true;
+
         const centerX = this.scene.scale.width / 2;
         const centerY = this.scene.scale.height / 2;
 
-        this.setPosition(centerX, centerY);
-        this.setVelocity(0, 0); // 일단 멈춤
+        if (this.body instanceof Phaser.Physics.Arcade.Body) {
+            this.body.reset(centerX, centerY);
+        }
 
         if (this.isHost) {
             this.setAlpha(0.5);
@@ -61,6 +69,7 @@ export class Ball extends Phaser.Physics.Arcade.Image {
             } else if (this.visualSprite) {
                 this.visualSprite.setAlpha(1);
             }
+            this._isScoreProcessing = false;
         });
     }
 

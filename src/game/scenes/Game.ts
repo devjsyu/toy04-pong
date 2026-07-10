@@ -134,12 +134,11 @@ export class Game extends Phaser.Scene {
         });
 
         // 점수/게임 상태 동기화 수신
-        this.socket.on('scoreUpdate', (data: { scores: Record<PlayerEnum, number>; isGameOver: boolean; winner?: PlayerEnum }) => {
+        this.socket.on('scoreUpdate', (data: { scores: Record<PlayerEnum, number>; isGameOver: boolean; winner?: PlayerEnum; scorer: PlayerEnum; currentScore: number; }) => {
             if (this.isHost) return;
 
             this.scores = data.scores;
-            this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.One, this.scores[PlayerEnum.One]);
-            this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.Two, this.scores[PlayerEnum.Two]);
+            this.game.events.emit(EVENTS.SCORE_UPDATED, data.scorer, data.currentScore);
 
             this.processScoreEvent(data.isGameOver, data.winner);
         });
@@ -226,7 +225,8 @@ export class Game extends Phaser.Scene {
     }
 
     private checkScore() {
-        if (this.isGameOver) return;
+        // 점수 처리 중이거나 게임 오버면 무시
+        if (this.isGameOver || !this.ball || this.ball.isScoreProcessing) return;
 
         if (this.ball.x < 0 || this.ball.x > this.scale.width) {
             const scorer = this.ball.x < 0 ? PlayerEnum.Two : PlayerEnum.One;
@@ -242,7 +242,9 @@ export class Game extends Phaser.Scene {
             this.socket.emit('scoreUpdate', {
                 scores: this.scores,
                 isGameOver: isGameOver,
-                winner: winner
+                winner: winner,
+                scorer: scorer,
+                currentScore: currentScore
             });
 
             this.processScoreEvent(isGameOver, winner);
