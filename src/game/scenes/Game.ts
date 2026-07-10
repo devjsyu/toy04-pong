@@ -28,9 +28,6 @@ export class Game extends Phaser.Scene {
     private targetBallY: number = 0;
     private firstBallRender: boolean = true;
 
-    // 틱 레이트와 상관없이 충돌 시 즉시 Guest에게 알리기 위한 변수
-    private nextCollisionSFX: 'none' | 'paddle' | 'wall' = 'none';
-
     // 틱 레이트 제한용 타이머
     private lastPaddleSentTime: number = 0;
     private lastBallSentTime: number = 0;
@@ -287,10 +284,8 @@ export class Game extends Phaser.Scene {
                 this.socket.emit("ballUpdate", {
                     x: this.ball.x,
                     y: this.ball.y,
-                    sfx: this.nextCollisionSFX // 충돌 상태 변수 추가로 얹기
                 });
                 this.lastBallSentTime = now;
-                this.nextCollisionSFX = 'none'; // 전송 완료하였으니 초기화
             }
         }
     }
@@ -319,8 +314,6 @@ export class Game extends Phaser.Scene {
             } else {
                 this.sound.play(ASSETS.SOUND_SCORE, { volume: 0.5 });
                 this.ball.resetBall();
-
-                this.sendBallUpdateImmediate('none');
             }
         }
     }
@@ -336,17 +329,5 @@ export class Game extends Phaser.Scene {
             this.scene.stop(SCENES.HUD);
             this.scene.start(SCENES.GAME_OVER, { winner });
         });
-    }
-
-    // 충돌 시 주기적 타이머와 별개로 즉시 동기화하기 위한 헬퍼 함수
-    private sendBallUpdateImmediate(sfxType: 'none' | 'paddle' | 'wall') {
-        if (!this.ball) return;
-        this.socket.emit("ballUpdate", {
-            x: this.ball.x,
-            y: this.ball.y,
-            sfx: sfxType
-        });
-        this.lastBallSentTime = Date.now();
-        this.nextCollisionSFX = 'none';
     }
 }
