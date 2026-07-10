@@ -54,104 +54,13 @@ export class Game extends Phaser.Scene {
         this.onGameStart();
 
         // 3. 인게임 소켓 이벤트 리스너 등록
+        this.setupSocketEvents();
 
-        // 상대방 패들 움직임 수신
-        this.socket.on('opponentMove', (data: { y: number }) => {
-            if (!this.isRoleAssigned) return;
-
-            // 정확한 Guest 물리 충돌 판정 위해 보간 없이 y 좌표 즉시 대입 
-            if (this.isHost) {
-                this.paddle2.y = data.y; // Host 관점에서 Guest의 Paddle은 즉시 동기화
-                if (this.paddle2.body) this.paddle2.body.updateFromGameObject();
-            } else {
-                // 물리 충돌 판정 책임이 없는 Guest는 보간 활용하여 렌더링
-                this.paddle1.setTargetY(data.y);
-            }
-        });
-
-        // Guest가 서버로부터 공 위치 수신
-        this.socket.on('ballRender', (data: { x: number; y: number; sfx?: string }) => {
-            if (!this.isRoleAssigned || this.isHost) return;
-
-            if (data.sfx && data.sfx !== 'none') {
-                console.log(`[Guest Sound Debug] SFX 수신됨: ${data.sfx}`);
-            }
-
-            if (this.firstBallRender) {
-                // 공의 현재 위치를 즉시 화면 정중앙으로 리셋
-                this.ball.setPosition(data.x, data.y);
-                // 다음 프레임 update() 보간 루프가 튀지 않도록 targetBall x, y 좌표도 동일하게 갱신
-                this.targetBallX = data.x;
-                this.targetBallY = data.y;
-                this.firstBallRender = false;
-            } else {
-                this.targetBallX = data.x;
-                this.targetBallY = data.y;
-            }
-
-            if (data.sfx && ['paddle', 'wall'].includes(data.sfx)) {
-                this.sound.play(ASSETS.SOUND_BOUNCE, { volume: 0.5 });
-            }
-        });
-
-        // 점수/게임 상태 동기화 수신
-        this.socket.on('scoreUpdate', (data: { scores: Record<PlayerEnum, number>; isGameOver: boolean; winner?: PlayerEnum }) => {
-            if (this.isHost) return;
-
-            this.scores = data.scores;
-            this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.One, this.scores[PlayerEnum.One]);
-            this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.Two, this.scores[PlayerEnum.Two]);
-
-            if (data.isGameOver) {
-                this.triggerGameOverSequence(data.winner);
-            } else {
-                this.sound.play(ASSETS.SOUND_SCORE, { volume: 0.5 });
-                if (this.ball) {
-                    this.ball.setAlpha(0.5);
-                }
-                this.firstBallRender = true; // 공 리셋 시 보간 튀는 현상 방지
-            }
-        });
-
-        // 인게임 도중 상대방이 연결을 끊었을 때
-        this.socket.on('opponentLeft', () => {
-            console.log('[Game] Opponent Left.');
-            alert('상대방이 게임에서 퇴장했습니다.');
-            this.isGameOver = true;
-            this.physics.pause();
-            if (this.ball) {
-                this.ball.setVelocity(0, 0);
-            }
-        });
-
-        // 씬 종료 시 리스너 및 소켓 정리 (메모리 누수 방지)
-        this.events.once('shutdown', () => {
-            if (this.socket) {
-                this.socket.off('opponentMove');
-                this.socket.off('ballRender');
-                this.socket.off('scoreUpdate');
-                this.socket.off('opponentLeft');
-                this.socket.disconnect();
-            }
-        });
-
-        // 공 충돌 이벤트 리스너
-        this.socket.on('ballCollision', (data: { type: 'paddle' | 'wall' }) => {
-            if (this.isHost) return;
-
-            this.sound.play(ASSETS.SOUND_BOUNCE, { volume: 0.5 });
-        });
-
+        // 4. 게임 상태 및 화면 연출 초기화
         this.isGameOver = false;
-
         this.cameras.main.fadeIn(500, 0, 0, 0);
         this.cameras.main.setBackgroundColor(0x000000);
-
-        this.scores[PlayerEnum.One] = 0;
-        this.scores[PlayerEnum.Two] = 0;
-
-        this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.One, 0);
-        this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.Two, 0);
+        this.initScores();
     }
 
     private setupGameObjects() {
@@ -234,6 +143,102 @@ export class Game extends Phaser.Scene {
         }
     }
 
+    private setupSocketEvents() {
+        if (!this.socket) return;
+
+        // 상대방 패들 움직임 수신
+        this.socket.on('opponentMove', (data: { y: number }) => {
+            if (!this.isRoleAssigned) return;
+
+            // 정확한 Guest 물리 충돌 판정 위해 보간 없이 y 좌표 즉시 대입 
+            if (this.isHost) {
+                this.paddle2.y = data.y; // Host 관점에서 Guest의 Paddle은 즉시 동기화
+                if (this.paddle2.body) this.paddle2.body.updateFromGameObject();
+            } else {
+                // 물리 충돌 판정 책임이 없는 Guest는 보간 활용하여 렌더링
+                this.paddle1.setTargetY(data.y);
+            }
+        });
+
+        // Guest가 서버로부터 공 위치 수신
+        this.socket.on('ballRender', (data: { x: number; y: number }) => {
+            if (!this.isRoleAssigned || this.isHost) return;
+
+            if (this.firstBallRender) {
+                // 공의 현재 위치를 즉시 화면 정중앙으로 리셋
+                this.ball.setPosition(data.x, data.y);
+                // 다음 프레임 update() 보간 루프가 튀지 않도록 targetBall x, y 좌표도 동일하게 갱신
+                this.targetBallX = data.x;
+                this.targetBallY = data.y;
+                this.firstBallRender = false;
+            } else {
+                this.targetBallX = data.x;
+                this.targetBallY = data.y;
+            }
+        });
+
+        // 점수/게임 상태 동기화 수신
+        this.socket.on('scoreUpdate', (data: { scores: Record<PlayerEnum, number>; isGameOver: boolean; winner?: PlayerEnum }) => {
+            if (this.isHost) return;
+
+            this.scores = data.scores;
+            this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.One, this.scores[PlayerEnum.One]);
+            this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.Two, this.scores[PlayerEnum.Two]);
+
+            if (data.isGameOver) {
+                this.triggerGameOverSequence(data.winner);
+            } else {
+                this.sound.play(ASSETS.SOUND_SCORE, { volume: 0.5 });
+                if (this.ball) {
+                    this.ball.setAlpha(0.5);
+                }
+                this.firstBallRender = true; // 공 리셋 시 보간 튀는 현상 방지
+            }
+        });
+
+        // 인게임 도중 상대방이 연결을 끊었을 때
+        this.socket.on('opponentLeft', () => {
+            console.log('[Game] Opponent Left.');
+            alert('상대방이 게임에서 퇴장했습니다.');
+            this.isGameOver = true;
+            this.physics.pause();
+            if (this.ball) {
+                this.ball.setVelocity(0, 0);
+            }
+        });
+
+        // 씬 종료 시 리스너 및 소켓 정리
+        this.events.once('shutdown', () => {
+            this.removeSocketEvents();
+        });
+
+        // 공 충돌 이벤트 리스너
+        this.socket.on('ballCollision', (data: { type: 'paddle' | 'wall' }) => {
+            if (this.isHost) return;
+
+            this.sound.play(ASSETS.SOUND_BOUNCE, { volume: 0.5 });
+        });
+    }
+
+    // 메모리 누수 방지를 위한 소켓 이벤트 정리
+    private removeSocketEvents() {
+        if (!this.socket) return;
+        this.socket.off('opponentMove');
+        this.socket.off('ballRender');
+        this.socket.off('scoreUpdate');
+        this.socket.off('opponentLeft');
+        this.socket.off('ballCollision');
+        this.socket.disconnect();
+    }
+
+    // 초기 점수 및 이벤트 방송
+    private initScores() {
+        this.scores[PlayerEnum.One] = 0;
+        this.scores[PlayerEnum.Two] = 0;
+        this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.One, 0);
+        this.game.events.emit(EVENTS.SCORE_UPDATED, PlayerEnum.Two, 0);
+    }
+
     // Phaser의 내장 매개변수 time과 delta 명시적 수신
     update(time: number, delta: number) {
         if (this.isGameOver || !this.isRoleAssigned) return;
@@ -250,6 +255,7 @@ export class Game extends Phaser.Scene {
 
         // [물리-렌더 분리] Host 측: 실제 물리 패들 위치 추종 (delta 반영)
         if (this.isHost && this.paddle2Visual) {
+            // 두 위치의 차이가 커지만 즉시 동기화
             if (Math.abs(this.paddle2Visual.y - this.paddle2.y) > 100) {
                 this.paddle2Visual.y = this.paddle2.y;
             } else {
