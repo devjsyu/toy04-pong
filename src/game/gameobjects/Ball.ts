@@ -12,6 +12,9 @@ export class Ball extends Phaser.Physics.Arcade.Image {
     public get isScoreProcessing(): boolean {
         return this._isScoreProcessing;
     }
+    public setScoreProcessing(value: boolean): void {
+        this._isScoreProcessing = value;
+    }
 
     constructor(scene: Phaser.Scene, x: number, y: number, isHost: boolean) {
         super(scene, x, y, ASSETS.BALL);
@@ -60,6 +63,7 @@ export class Ball extends Phaser.Physics.Arcade.Image {
         }
         // 1초 뒤에 이동 시작
         this.scene.time.delayedCall(1000, () => {
+            this._isScoreProcessing = false;
             if (!this.active) return;
             if (this.isHost) {
                 this.setAlpha(1);
@@ -69,7 +73,6 @@ export class Ball extends Phaser.Physics.Arcade.Image {
             } else if (this.visualSprite) {
                 this.visualSprite.setAlpha(1);
             }
-            this._isScoreProcessing = false;
         });
     }
 

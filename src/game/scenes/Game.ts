@@ -229,6 +229,8 @@ export class Game extends Phaser.Scene {
         if (this.isGameOver || !this.ball || this.ball.isScoreProcessing) return;
 
         if (this.ball.x < 0 || this.ball.x > this.scale.width) {
+            this.ball.setScoreProcessing(true);
+
             const scorer = this.ball.x < 0 ? PlayerEnum.Two : PlayerEnum.One;
 
             this.scores[scorer]++;
