@@ -133,16 +133,6 @@ export class Game extends Phaser.Scene {
             this.ball.setTargetPosition(data.x, data.y);
         });
 
-        // 점수/게임 상태 동기화 수신
-        this.socket.on('scoreUpdate', (data: { scores: Record<PlayerEnum, number>; isGameOver: boolean; winner?: PlayerEnum; scorer: PlayerEnum; currentScore: number; }) => {
-            if (this.isHost) return;
-
-            this.scores = data.scores;
-            this.game.events.emit(EVENTS.SCORE_UPDATED, data.scorer, data.currentScore);
-
-            this.processScoreEvent(data.isGameOver, data.winner);
-        });
-
         // 인게임 도중 상대방이 연결을 끊었을 때
         this.socket.on('opponentLeft', () => {
             console.log('[Game] Opponent Left.');
@@ -165,6 +155,16 @@ export class Game extends Phaser.Scene {
 
             this.sound.play(ASSETS.SOUND_BOUNCE, { volume: 0.5 });
         });
+
+        // 게임 종료 이벤트 리스너
+        this.socket.on('endGame', (data: { winner: PlayerEnum }) => {
+            this.endGame(data.winner);
+        });
+
+        // 다음 라운드 이벤트 리스너
+        this.socket.on('nextRound', (data: { scorer: PlayerEnum; currentScore: number }) => {
+            this.nextRound(data.scorer, data.currentScore);
+        });
     }
 
     // 메모리 누수 방지를 위한 소켓 이벤트 정리
@@ -175,6 +175,8 @@ export class Game extends Phaser.Scene {
         this.socket.off('scoreUpdate');
         this.socket.off('opponentLeft');
         this.socket.off('ballCollision');
+        this.socket.off('endGame');
+        this.socket.off('nextRound');
         this.socket.disconnect();
     }
 
@@ -235,7 +237,6 @@ export class Game extends Phaser.Scene {
 
             this.scores[scorer]++;
             const currentScore = this.scores[scorer];
-            this.game.events.emit(EVENTS.SCORE_UPDATED, scorer, currentScore);
 
             const isGameOver = currentScore >= WINNING_SCORE;
             const winner = isGameOver ? scorer : undefined;
@@ -249,24 +250,33 @@ export class Game extends Phaser.Scene {
                 currentScore: currentScore
             });
 
-            this.processScoreEvent(isGameOver, winner);
+            if (isGameOver && winner) {
+                this.socket.emit('endGame', { winner });
+                this.endGame(winner);
+            } else {
+                this.socket.emit('nextRound', { scorer, currentScore });
+                this.nextRound(scorer, currentScore);
+            }
         }
     }
 
-    private processScoreEvent(isGameOver: boolean, winner?: PlayerEnum) {
-        if (isGameOver) {
-            this.physics.pause();
+    private endGame(winner: PlayerEnum) {
+        this.physics.pause();
 
-            this.sound.play(ASSETS.SOUND_WIN, { volume: 0.5 });
+        this.sound.play(ASSETS.SOUND_WIN, { volume: 0.5 });
 
-            this.cameras.main.fadeOut(500, 0, 0, 0);
-            this.cameras.main.once('camerafadeoutcomplete', () => {
-                this.scene.stop(SCENES.HUD);
-                this.scene.start(SCENES.GAME_OVER, { winner });
-            });
-        } else {
-            this.sound.play(ASSETS.SOUND_SCORE, { volume: 0.5 });
-            this.ball.resetBall();
-        }
+        this.cameras.main.fadeOut(500, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.stop(SCENES.HUD);
+            this.scene.start(SCENES.GAME_OVER, { winner });
+        });
+
+    }
+
+    private nextRound(scorer: PlayerEnum, currentScore: number) {
+        this.game.events.emit(EVENTS.SCORE_UPDATED, scorer, currentScore);
+
+        this.sound.play(ASSETS.SOUND_SCORE, { volume: 0.5 });
+        this.ball.resetBall();
     }
 }

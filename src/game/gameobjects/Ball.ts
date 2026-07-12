@@ -82,7 +82,7 @@ export class Ball extends Phaser.Physics.Arcade.Image {
     }
 
     update(delta: number = 16.666) {
-        if (this.isHost) {
+        if (this.isHost || this.isScoreProcessing) {
             // Host는 별도 로직 불필요
             return;
         }
