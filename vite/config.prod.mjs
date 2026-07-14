@@ -17,7 +17,7 @@ const phasermsg = () => {
 }
 
 export default defineConfig({
-    base: '/toy04-pong/',
+    base: './',
     logLevel: 'warning',
     build: {
         outDir: 'dist', // 빌드 결과물이 저장될 폴더 이름
