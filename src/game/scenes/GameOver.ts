@@ -9,8 +9,8 @@ export class GameOver extends Scene {
         super('GameOver');
     }
 
-    init(data?: { winner?: string }) {
-        this.winner = data?.winner;
+    init(data: { winner?: string }) {
+        this.winner = data.winner;
     }
 
     create() {
