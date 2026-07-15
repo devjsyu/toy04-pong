@@ -31,12 +31,12 @@ export class Game extends Phaser.Scene {
     }
 
     // Lobby 씬으로부터 전달받은 소켓 및 역할 정보 바인딩
-    init(data: { socket: Socket; role: string; hostNickname: string; guestNickname: string }) {
+    init(data: { socket: Socket; isHost: boolean; hostNickname: string; guestNickname: string }) {
         this.socket = data.socket;
-        this.isHost = (data.role === 'host');
+        this.isHost = data.isHost;
         this.hostNickname = data.hostNickname;
         this.guestNickname = data.guestNickname;
-        console.log(`[Game Init] Role: ${data.role}`);
+        console.log(`[Game Init] Role: ${data.isHost ? 'host' : 'guest'}`);
     }
 
     // 게임 요소 배치 및 소켓 이벤트 등록

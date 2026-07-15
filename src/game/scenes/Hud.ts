@@ -2,8 +2,8 @@ import * as Phaser from 'phaser';
 import { PlayerEnum, SCENES, EVENTS } from '../../constants/gameConfig';
 
 export class Hud extends Phaser.Scene {
-    private hostNickname?: string = 'Player 1';
-    private guestNickname?: string = 'Player 2';
+    private hostNickname?: string;
+    private guestNickname?: string;
 
     private player1ScoreText!: Phaser.GameObjects.Text;
     private player2ScoreText!: Phaser.GameObjects.Text;
@@ -13,8 +13,8 @@ export class Hud extends Phaser.Scene {
     }
 
     init(data: { hostNickname: string; guestNickname: string }) {
-        this.hostNickname = data.hostNickname;
-        this.guestNickname = data.guestNickname;
+        this.hostNickname = data.hostNickname ?? 'Player 1';
+        this.guestNickname = data.guestNickname ?? 'Player 2';
     }
 
     create() {

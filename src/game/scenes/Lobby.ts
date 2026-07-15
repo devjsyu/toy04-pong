@@ -110,7 +110,7 @@ export class Lobby extends Scene {
             this.cameras.main.once('camerafadeoutcomplete', () => {
                 this.scene.start(SCENES.GAME, {
                     socket: this.socket,
-                    role: this.isHost ? 'host' : 'guest',
+                    isHost: this.isHost,
                     hostNickname: this.hostNickname,
                     guestNickname: this.guestNickname
                 });
