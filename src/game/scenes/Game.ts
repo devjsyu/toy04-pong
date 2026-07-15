@@ -10,6 +10,8 @@ export class Game extends Phaser.Scene {
     ball!: Ball;
     private socket!: Socket;
     private isHost: boolean = false;
+    private hostNickname?: string = 'Player 1';
+    private guestNickname?: string = 'Player 2';
     private isRoleAssigned: boolean = false;
     private isGameStarted: boolean = false;
     private isGameOver: boolean = false;
@@ -29,9 +31,11 @@ export class Game extends Phaser.Scene {
     }
 
     // Lobby 씬으로부터 전달받은 소켓 및 역할 정보 바인딩
-    init(data: { socket: Socket; role: string }) {
+    init(data: { socket: Socket; role: string; hostNickname: string; guestNickname: string }) {
         this.socket = data.socket;
         this.isHost = (data.role === 'host');
+        this.hostNickname = data.hostNickname;
+        this.guestNickname = data.guestNickname;
         console.log(`[Game Init] Role: ${data.role}`);
     }
 
@@ -58,7 +62,10 @@ export class Game extends Phaser.Scene {
     private setupGameObjects() {
         if (this.isRoleAssigned) return;
 
-        this.scene.run(SCENES.HUD);
+        this.scene.run(SCENES.HUD, {
+            hostNickname: this.hostNickname,
+            guestNickname: this.guestNickname
+        });
 
         // Ball 생성 (처음에는 멈춤 상태)
         this.ball = new Ball(this, this.scale.width / 2, this.scale.height / 2, this.isHost);

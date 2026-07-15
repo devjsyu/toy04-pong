@@ -2,6 +2,9 @@ import * as Phaser from 'phaser';
 import { PlayerEnum, SCENES, EVENTS } from '../../constants/gameConfig';
 
 export class Hud extends Phaser.Scene {
+    private hostNickname?: string = 'Player 1';
+    private guestNickname?: string = 'Player 2';
+
     private player1ScoreText!: Phaser.GameObjects.Text;
     private player2ScoreText!: Phaser.GameObjects.Text;
 
@@ -9,21 +12,23 @@ export class Hud extends Phaser.Scene {
         super(SCENES.HUD);
     }
 
-    create() {
-        const hostNickname = this.registry.get('hostNickname');
-        const guestNickname = this.registry.get('guestNickname');
+    init(data: { hostNickname: string; guestNickname: string }) {
+        this.hostNickname = data.hostNickname;
+        this.guestNickname = data.guestNickname;
+    }
 
+    create() {
         this.player1ScoreText = this.createScoreText(
             this.scale.width * 0.15, // 왼쪽 끝으로 이동
             20,                      // 최상단 여백
-            hostNickname,
+            this.hostNickname,
             0
         );
 
         this.player2ScoreText = this.createScoreText(
             this.scale.width * 0.85, // 오른쪽 끝으로 이동
             20,                      // 최상단 여백
-            guestNickname,
+            this.guestNickname,
             0
         );
 
@@ -37,13 +42,10 @@ export class Hud extends Phaser.Scene {
     }
 
     private handleScoreUpdate(player: PlayerEnum, score: number) {
-        const hostNickname = this.registry.get('hostNickname');
-        const guestNickname = this.registry.get('guestNickname');
-
         if (player === PlayerEnum.One) {
-            this.updateText(this.player1ScoreText, hostNickname, score);
+            this.updateText(this.player1ScoreText, this.hostNickname, score);
         } else if (player === PlayerEnum.Two) {
-            this.updateText(this.player2ScoreText, guestNickname, score);
+            this.updateText(this.player2ScoreText, this.guestNickname, score);
         }
     }
 

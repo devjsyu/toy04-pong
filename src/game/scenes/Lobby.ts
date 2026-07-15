@@ -11,6 +11,8 @@ interface MatchedData {
 export class Lobby extends Scene {
     private socket!: Socket;
     private isHost: boolean = false;
+    private hostNickname?: string;
+    private guestNickname?: string;
     private transitionedToGame: boolean = false;
     private waitingText!: Phaser.GameObjects.Text;
 
@@ -81,11 +83,8 @@ export class Lobby extends Scene {
             console.log('[Lobby] Matched!', data);
             const { role, hostNickname, guestNickname } = data;
             this.isHost = (role === 'host');
-
-            // 추후 게임 씬에서 사용할 데이터 저장
-            this.registry.set('hostNickname', hostNickname);
-            this.registry.set('guestNickname', guestNickname);
-            this.registry.set('isHost', this.isHost);
+            this.hostNickname = hostNickname;
+            this.guestNickname = guestNickname;
 
             const message = this.isHost
                 ? `${hostNickname} vs ${guestNickname}`
@@ -111,7 +110,9 @@ export class Lobby extends Scene {
             this.cameras.main.once('camerafadeoutcomplete', () => {
                 this.scene.start(SCENES.GAME, {
                     socket: this.socket,
-                    role: this.isHost ? 'host' : 'guest'
+                    role: this.isHost ? 'host' : 'guest',
+                    hostNickname: this.hostNickname,
+                    guestNickname: this.guestNickname
                 });
             });
         });
