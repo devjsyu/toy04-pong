@@ -11,8 +11,8 @@ import { Hud } from './scenes/Hud';
 //  https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
 const config: Phaser.Types.Core.GameConfig = {
     type: AUTO,
-    width: 1024,
-    height: 768,
+    width: 800,
+    height: 600,
     parent: 'game-container',
     backgroundColor: '#000000',
 
