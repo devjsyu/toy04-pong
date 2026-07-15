@@ -3,13 +3,13 @@ import { SCENES } from '../../constants/gameConfig';
 
 export class GameOver extends Scene {
     gameover_text!: Phaser.GameObjects.Text;
-    winner?: string;
+    winner: string;
 
     constructor() {
-        super('GameOver');
+        super(SCENES.GAME_OVER);
     }
 
-    init(data: { winner?: string }) {
+    init(data: { winner: string }) {
         this.winner = data.winner;
     }
 
@@ -17,9 +17,7 @@ export class GameOver extends Scene {
         this.cameras.main.fadeIn(500, 0, 0, 0);
         this.cameras.main.setBackgroundColor(0x000000);
 
-        const titleText = this.winner ? `${this.winner} Wins!` : 'Game Over';
-
-        this.gameover_text = this.add.text(this.scale.width / 2, this.scale.height / 2, titleText, {
+        this.gameover_text = this.add.text(this.scale.width / 2, this.scale.height / 2, `${this.winner} wins!`, {
             fontFamily: 'Mona12-Bold', fontSize: 60, color: '#ffffff',
             align: 'center'
         });
