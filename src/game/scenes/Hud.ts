@@ -10,17 +10,20 @@ export class Hud extends Phaser.Scene {
     }
 
     create() {
+        const hostNickname = this.registry.get('hostNickname');
+        const guestNickname = this.registry.get('guestNickname');
+
         this.player1ScoreText = this.createScoreText(
             this.scale.width * 0.15, // 왼쪽 끝으로 이동
             20,                      // 최상단 여백
-            PlayerEnum.One,
+            hostNickname,
             0
         );
 
         this.player2ScoreText = this.createScoreText(
             this.scale.width * 0.85, // 오른쪽 끝으로 이동
             20,                      // 최상단 여백
-            PlayerEnum.Two,
+            guestNickname,
             0
         );
 
@@ -34,28 +37,31 @@ export class Hud extends Phaser.Scene {
     }
 
     private handleScoreUpdate(player: PlayerEnum, score: number) {
+        const hostNickname = this.registry.get('hostNickname');
+        const guestNickname = this.registry.get('guestNickname');
+
         if (player === PlayerEnum.One) {
-            this.updateText(this.player1ScoreText, PlayerEnum.One, score);
+            this.updateText(this.player1ScoreText, hostNickname, score);
         } else if (player === PlayerEnum.Two) {
-            this.updateText(this.player2ScoreText, PlayerEnum.Two, score);
+            this.updateText(this.player2ScoreText, guestNickname, score);
         }
     }
 
-    private updateText(textObj: Phaser.GameObjects.Text, label: string | PlayerEnum, score: number) {
+    private updateText(textObj: Phaser.GameObjects.Text, label: string | undefined, score: number) {
         const formattedScore = score.toString().padStart(2, '0');
         // 모든 텍스트를 대문자로 변환하여 아케이드 느낌을 강조하고 세로로 배치합니다.
-        textObj.setText(`${label.toUpperCase()}\n${formattedScore}`);
+        textObj.setText(`${label?.toUpperCase()}\n${formattedScore}`);
     }
 
     /**
      * Helper method to centralize score text styling and creation
      */
-    private createScoreText(x: number, y: number, label: string | PlayerEnum, score: number): Phaser.GameObjects.Text {
+    private createScoreText(x: number, y: number, label: string | undefined, score: number): Phaser.GameObjects.Text {
         const formattedScore = score.toString().padStart(2, '0');
-        const content = `${label.toUpperCase()}\n${formattedScore}`;
+        const content = `${label?.toUpperCase()}\n${formattedScore}`;
 
         const textStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-            fontFamily: 'PressStart2P',
+            fontFamily: 'Mona12-Bold',
             fontSize: '20px', // 크기를 줄여 시야 방해 최소화
             color: '#ffffff',
             align: 'center',

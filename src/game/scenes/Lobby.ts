@@ -2,6 +2,12 @@ import { Scene } from 'phaser';
 import { SCENES } from '../../constants/gameConfig';
 import { io, Socket } from 'socket.io-client';
 
+interface MatchedData {
+    role: string;
+    hostNickname: string;
+    guestNickname: string;
+}
+
 export class Lobby extends Scene {
     private socket!: Socket;
     private isHost: boolean = false;
@@ -71,12 +77,22 @@ export class Lobby extends Scene {
         });
 
         // 2. matched: 서버가 보내준 role (host 또는 guest) 데이터를 변수에 저장
-        this.socket.on('matched', (data: { role: string } | string) => {
+        this.socket.on('matched', (data: MatchedData) => {
             console.log('[Lobby] Matched!', data);
-            const role = typeof data === 'string' ? data : data.role;
+            const { role, hostNickname, guestNickname } = data;
             this.isHost = (role === 'host');
+
+            // 추후 게임 씬에서 사용할 데이터 저장
+            this.registry.set('hostNickname', hostNickname);
+            this.registry.set('guestNickname', guestNickname);
+            this.registry.set('isHost', this.isHost);
+
+            const message = this.isHost
+                ? `${hostNickname} vs ${guestNickname}`
+                : `${guestNickname} vs ${hostNickname}`;
+
             if (this.waitingText && this.waitingText.active) {
-                this.waitingText.setText('매칭 완료! 곧 시작합니다...');
+                this.waitingText.setText(`${message}\n매칭 완료! 곧 시작합니다...`);
             }
         });
 
