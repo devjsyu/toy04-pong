@@ -20,7 +20,7 @@ export class GameOver extends Scene {
         const titleText = this.winner ? `${this.winner} Wins!` : 'Game Over';
 
         this.gameover_text = this.add.text(this.scale.width / 2, this.scale.height / 2, titleText, {
-            fontFamily: 'PressStart2P', fontSize: 60, color: '#ffffff',
+            fontFamily: 'Mona12-Bold', fontSize: 60, color: '#ffffff',
             align: 'center'
         });
         this.gameover_text.setOrigin(0.5);

@@ -246,7 +246,10 @@ export class Game extends Phaser.Scene {
             const currentScore = this.scores[scorer];
 
             const isGameOver = currentScore >= WINNING_SCORE;
-            const winner = isGameOver ? scorer : undefined;
+            let winner: string | undefined = undefined;
+            if (isGameOver) {
+                winner = scorer === PlayerEnum.One ? this.hostNickname : this.guestNickname;
+            }
 
             // Host가 점수 업데이트 이벤트를 서버에 전송
             this.socket.emit('scoreUpdate', {
@@ -267,7 +270,7 @@ export class Game extends Phaser.Scene {
         }
     }
 
-    private endGame(winner: PlayerEnum) {
+    private endGame(winner: string) {
         this.physics.pause();
 
         this.sound.play(ASSETS.SOUND_WIN, { volume: 0.5 });
