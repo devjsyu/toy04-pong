@@ -20,12 +20,9 @@ export class Lobby extends Scene {
         super(SCENES.LOBBY);
     }
 
-    init(data?: { ticket?: string }) {
-        let ticket = data?.ticket;
-        if (!ticket) {
-            const urlParams = new URLSearchParams(window.location.search);
-            ticket = urlParams.get('ticket') || '';
-        }
+    init() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const ticket = urlParams.get('ticket') || '';
 
         console.log(`[Lobby Init] Ticket: ${ticket}`);
         this.transitionedToGame = false;
